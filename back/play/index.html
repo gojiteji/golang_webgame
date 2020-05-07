@@ -1,0 +1,15 @@
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample App</title>
+</head>
+<body>
+{{if eq .session_id "777"}}
+    <a>you joined a room! {{.session_id}}</a>
+{{else}}
+    <a>room not found!</a>
+{{end}}
+</body>
+</html>
+
+
