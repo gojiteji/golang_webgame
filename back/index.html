@@ -5,19 +5,40 @@
 	</head>
 	<body>
 	<center>
-	<h>ヒトあつめ</h>
-	<br>
-	{{.info.Players}} players are playing now!
-	<br>
+	<h1>ヒトあつめ</h1>
 
-	{{if eq .info.Page 0}}
-		<form method="post" action="/">
+	{{if eq .page 0}}
+		<br>
+		{{.info.Players}} players are playing now!
+		<br>
+
+		<form method="post" action="/Create">
 			<button type="submit">Create a room</button>
-			<button type="submit">Join a room </button>
 		</form>
-	{{else if eq .info.Page 1}}
-		<a>{{.host.id}}</a>
-		<a>{{.host.name}}</a>
+		<form method="post" action="/Join">
+			<button type="submit">Join a room</button>
+		</form>
+	{{else if eq .page 1}}
+		<br>
+		<h1>Room Setting</h1>
+		<br>
+		<form method="post" action="/Created">
+		<a>your name:<input type="text" name="text"maxlength='12' placeholder={{.Name}} ></a>
+			<br>
+		<button>Done</button>
+		</form>
+	{{else if eq .page 2}}
+		<br>
+		<h1>Join a Room</h1>
+		<br>
+		<form method="post" action="/Joined">
+			<a>your name:<input type="text" name="text"maxlength='12' placeholder={{.Name}} ></a>
+			<br>
+			<a>room id:<input type="text" name="id"maxlength='20' minlength='20'   ></a>
+			<br>
+			<button>Done</button>
+		</form>
+
 	{{end}}
 		</center>
 	</body>

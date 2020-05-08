@@ -1,0 +1,27 @@
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample App</title>
+</head>
+<body>
+{{if eq .available true}}
+    <h2>Waiting For your Friends </h2>
+    <br>
+    <a>share below room id to join!</a>
+    <br>
+    <font color="green">{{.host.Id}}</font>
+    <br>
+    host:{{.host.Name}}
+    <br>
+    {{ range .Users }}
+        <li>{{.Name}}</li>
+    {{end}}
+    <form method="post" action="/Join{{.host.Id}}}">
+        <button type="submit">Start</button>
+    </form>
+{{else}}
+    <a>unavailable room</a>
+{{end}}
+
+</body>
+</html>
