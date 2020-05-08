@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gomodule/redigo/redis"
 	"math/rand"
@@ -120,7 +119,7 @@ func main() {
 			//ルームが満室か確認
 			members,_:=redis.Int(conn.Do("HGET", id, "members"))
 			if(members<6){
-				//既に同じクッキーげ入っていればサーバをアプううデートしない
+				//既に同じクッキーが入っていればサーバをアプううデートしない
 				//
 				conn.Do("HSET", id, "members", members+1)
 				conn.Do("HSET", id, "guest"+string(members)+"_id", userid)
@@ -139,10 +138,10 @@ func main() {
 	//Room page
 	router.GET("/play/:session_id", func(ctx *gin.Context) {
 		//ルームidが存在するか
-		id:= ctx.Param("id")
+		id:= ctx.Param("session_id")
+
 		_, err := redis.Int(conn.Do("HGET", id, "members"))
-		if err.Error() ==  "nil returned"{
-			fmt.Println("REDIRECTING")
+		if err != nil {
 			ctx.Redirect(302, "/")
 		}else {
 			//クッキーからユーザを取得
@@ -167,12 +166,7 @@ func main() {
 				}
 				i=i+1
 			}
-			fmt.Println(u)
-			fmt.Println(myindex)
-			fmt.Println(id)
-			fmt.Println(userid)
-
-			ctx.HTML(200, "waiting.html", gin.H{"u": u,"myindex":myindex,"id":id})
+			ctx.HTML(200, "waiting.html", gin.H{"u": u,"myindex":myindex+1,"id":id})
 		}
 	})
 

@@ -13,8 +13,14 @@
     <br>
     <font color="green">{{.id}}</font>
     <br>
+    <ol>
+        {{range .u}}
+        <li>{{.}}</li>
+
+    {{end}}
+    </ol>
+    {{.myindex}}. is you.
     <br>
-    {{.myindex}}
     <form method="post" action="/Start">
         <button type="submit">Start</button>
     </form>
