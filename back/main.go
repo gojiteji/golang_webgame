@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gomodule/redigo/redis"
+	"gopkg.in/olahol/melody.v1"
+	"log"
 	"math/rand"
+	"net/http"
 	"time"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"unsafe"
-
 	//"./pages"
 	"github.com/jinzhu/gorm"
 )
@@ -36,7 +38,23 @@ func RandString1(n int) string {
 	return string(b)
 }
 
-func wait(id string,ctx *gin.Context,IsHost bool,myindex int,u [6]string,i int){
+
+
+
+func wait(m *melody.Melody,id string,ctx *gin.Context,IsHost bool,myindex int,u [6]string,i int){
+
+	m.HandleMessage(func(s *melody.Session, msg []byte) {
+		m.Broadcast(msg)
+	})
+
+	m.HandleConnect(func(s *melody.Session) {
+		log.Printf("websocket connection open. [session: %#v]\n", s)
+	})
+
+	m.HandleDisconnect(func(s *melody.Session) {
+		log.Printf("websocket connection close. [session: %#v]\n", s)
+	})
+
 	conn, err := redis.Dial("tcp", "localhost:9000")
 	if err != nil {
 		panic(err)
@@ -45,11 +63,12 @@ func wait(id string,ctx *gin.Context,IsHost bool,myindex int,u [6]string,i int){
 	psc := redis.PubSubConn{Conn: conn}
 	psc.Subscribe("PubSub"+id)
 	for {
-		switch v := psc.Receive().(type) {
+		switch v:= psc.Receive().(type) {
 		case redis.Message:
-			fmt.Println("Reciever:",IsHost)
+
 			fmt.Printf(*(*string)(unsafe.Pointer(&v.Data)))
 			fmt.Println()
+			m.HandleRequest(ctx.Writer, ctx.Request)
 			break;
 		case redis.Subscription:
 			break;
@@ -60,7 +79,9 @@ func wait(id string,ctx *gin.Context,IsHost bool,myindex int,u [6]string,i int){
 }
 
 func main() {
+	m := melody.New()
 	router := gin.Default()
+
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
 	// 接続
@@ -209,14 +230,21 @@ func main() {
 					}
 					i=i+1
 			}
-			for {
 				ctx.HTML(200, "waiting.html", gin.H{"u": u, "myindex": myindex + 1, "id": id, "IsHost": IsHost})
-				myindex=myindex+1
-			}
+
 			//待機
-			go wait(id,ctx,IsHost,myindex,u,i)
+			go wait(m,id,ctx,IsHost,myindex,u,i)
 
 		}
+	})
+
+	rg := router.Group("/sampleapp")
+	rg.GET("/", func(ctx *gin.Context) {
+		http.ServeFile(ctx.Writer, ctx.Request, "index.html")
+	})
+
+	rg.GET("/ws", func(ctx *gin.Context) {
+		m.HandleRequest(ctx.Writer, ctx.Request)
 	})
 
 	router.GET("/Start/:session_id", func(ctx *gin.Context) {

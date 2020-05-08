@@ -4,8 +4,37 @@
     <meta charset="UTF-8">
     <title>Sample App</title>
 </head>
-<script type="text/javascript" src="./index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
 <body>
+<pre id="chat"></pre>
+<label id="title"></label>
+<input placeholder="say something" id="text" type="text">
+<script>
+    var url = "ws://" + window.location.host + "/sampleapp/ws";
+    var ws = new WebSocket(url);
+    var name = "Guest-" + Math.floor(Math.random() * 1000);
+    var chat = document.getElementById("chat");
+    document.getElementById("title").innerText = name + ": ";
+
+    var text = document.getElementById("text");
+    var now = function () {
+        return new Date().toLocaleString();
+    };
+
+    ws.onmessage = function (msg) {
+        var line =  now() + " : " + msg.data + "\n";
+        chat.innerText += line;
+    };
+
+    text.onkeydown = function (e) {
+        if (e.keyCode === 13 && text.value !== "") {
+            ws.send("[" + name + "] > " + text.value);
+            text.value = "";
+        }
+    };
+</script>
 
 
     <h2>Waiting For your Friends </h2>
@@ -14,7 +43,7 @@
     <br>
     <font color="green">{{.id}}</font>
     <br>
-    <ol>
+    <ol id="members">
         {{range .u}}
         <li>{{.}}</li>
 
@@ -23,7 +52,7 @@
     {{.myindex}}. is you.
     <br>
     {{if eq .IsHost true}}
-    <form method="get" action="/Start">
+    <form id="form" method="get" action="/Start">
         <button type="submit">Start</button>
     </form>
     {{end}}
