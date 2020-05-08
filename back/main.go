@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 	"math/rand"
 	"time"
 	"github.com/gin-contrib/sessions"
@@ -38,6 +40,15 @@ func main() {
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
 
+
+	// 接続
+	conn, err := redis.Dial("tcp", "localhost:9000")
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+
 	router.LoadHTMLGlob("*.html")
 
 	//title
@@ -73,12 +84,15 @@ func main() {
 			session.Set("userid", userid)
 			session.Save()
 		}
-		var host User
-		host.Id=ctx.Param("session_id")
-		host.Name=ctx.PostForm("text")
-		host.IsHost=true
+		name:=ctx.PostForm("text")
+		if  name==""{
+			name="hostgame"
+		}
 		//hostをサーバーに保存
-		
+		conn.Do("HSET", id, "members", "1")
+		conn.Do("HSET", id, "host_id", userid)
+		conn.Do("HSET", id, "host_name", name)
+
 		ctx.Redirect(302, "/play/"+string(id))
 	})
 
@@ -92,9 +106,24 @@ func main() {
 			session.Save()
 		}
 
-		//guestをサーバーに保存
 		id:=ctx.PostForm("id")
-		ctx.Redirect(302, "/play/"+id)
+		name:=ctx.PostForm("text")
+		if  name==""{
+			name="guest"
+		}
+		//ルームの存在確認
+		data, _ := redis.Bytes(conn.Do("HGET", id,"host_id"))
+		if data != nil {
+			//ルームが満室か確認
+			members,_:=redis.Int(conn.Do("HGET", id, "members"))
+			if(members<6){
+				conn.Do("HSET", id, "members", members+1)
+				conn.Do("HSET", id, "guest"+string(members)+"_id", userid)
+				conn.Do("HSET", id, "guest"+string(members)+"_name", name)
+			}
+			ctx.Redirect(302, "/Join")
+			ctx.HTML(200, "index.html", gin.H{"page":2,"message":"room id not found!"})
+		}
 	})
 
 	//Room page
@@ -105,7 +134,7 @@ func main() {
 
 		//クッキーからユーザを取得
 
-
+		//session.Get("userid")
 		//同一セッション内のユーザを全て取得
 		//Users:= [...] User{host, host,host}
 
