@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gomodule/redigo/redis"
 	"math/rand"
 	"time"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"unsafe"
+
 	//"./pages"
 	"github.com/jinzhu/gorm"
 )
@@ -33,13 +36,33 @@ func RandString1(n int) string {
 	return string(b)
 }
 
+func wait(id string,ctx *gin.Context,IsHost bool,myindex int,u [6]string,i int){
+	conn, err := redis.Dial("tcp", "localhost:9000")
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	psc := redis.PubSubConn{Conn: conn}
+	psc.Subscribe("PubSub"+id)
+	for {
+		switch v := psc.Receive().(type) {
+		case redis.Message:
+			fmt.Println("Reciever:",IsHost)
+			fmt.Printf(*(*string)(unsafe.Pointer(&v.Data)))
+			fmt.Println()
+			break;
+		case redis.Subscription:
+			break;
+		case error:
+			return
+		}
+	}
+}
 
 func main() {
 	router := gin.Default()
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
-
-
 	// 接続
 	conn, err := redis.Dial("tcp", "localhost:9000")
 	if err != nil {
@@ -110,6 +133,9 @@ func main() {
 		if  name==""{
 			name="guest"
 		}
+		session.Set("username", name)
+		session.Save()
+
 		//ルームの存在確認
 		_, err := redis.Int(conn.Do("HGET", id, "members"))
 		if err != nil {
@@ -147,27 +173,56 @@ func main() {
 			//クッキーからユーザを取得
 			session := sessions.Default(ctx)
 			userid := session.Get("userid")
+			username := session.Get("username")
 
 			//同一セッション内のユーザを全て取得
 			u0, _ := redis.String(conn.Do("HGET", id, "host_name"))
-			members,_:=redis.Int(conn.Do("HGET", id, "members"))
-			var u [6]string
-			u[0]=u0
-			i:=1
-			var myindex int
-			for {
-				if!(i<members){
-					break
+				u0id, _ := redis.String(conn.Do("HGET", id, "host_id"))
+				members,_:=redis.Int(conn.Do("HGET", id, "members"))
+				var u [6]string
+				IsHost:=false
+				u[0]=u0
+				i:=1
+				var myindex int
+
+				if userid==u0id{//is host
+					IsHost=true
+					//publish
+				}else{
+					//publish
+					//host以外はルームに入った際に相手にidを送信
+					username,_ = username.(string)
+
+					_, err := redis.Int(conn.Do("PUBLISH","PubSub"+id, username))
+					if err != nil {
+						panic(err)
+					}
 				}
-				u[i],_=redis.String(conn.Do("HGET", id, "guest"+string(i)+"_name"))
-				tmp,_:=redis.String(conn.Do("HGET", id, "guest"+string(i)+"_id"))
-				if(tmp==userid){
-					myindex=i
-				}
-				i=i+1
+				for {
+					if!(i<members){
+						break
+					}
+					u[i],_=redis.String(conn.Do("HGET", id, "guest"+string(i)+"_name"))
+					tmp,_:=redis.String(conn.Do("HGET", id, "guest"+string(i)+"_id"))
+					if(tmp==userid){
+						myindex=i
+					}
+					i=i+1
 			}
-			ctx.HTML(200, "waiting.html", gin.H{"u": u,"myindex":myindex+1,"id":id})
+			for {
+				ctx.HTML(200, "waiting.html", gin.H{"u": u, "myindex": myindex + 1, "id": id, "IsHost": IsHost})
+				myindex=myindex+1
+			}
+			//待機
+			go wait(id,ctx,IsHost,myindex,u,i)
+
 		}
+	})
+
+	router.GET("/Start/:session_id", func(ctx *gin.Context) {
+		//ルームidが存在するか
+		//id:= ctx.Param("session_id")
+			ctx.HTML(200, "game.html", gin.H{"message": "gamestarted"})
 	})
 
 

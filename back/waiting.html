@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Sample App</title>
 </head>
+
 <body>
 
 
@@ -21,9 +22,10 @@
     </ol>
     {{.myindex}}. is you.
     <br>
-    <form method="post" action="/Start">
+    {{if eq .IsHost true}}
+    <form method="get" action="/Start">
         <button type="submit">Start</button>
     </form>
-
+    {{end}}
 </body>
 </html>
