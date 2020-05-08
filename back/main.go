@@ -4,7 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"math/rand"
 	"time"
-
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	//"./pages"
 	"github.com/jinzhu/gorm"
 )
@@ -32,16 +33,18 @@ func RandString1(n int) string {
 }
 
 
-
-
-
 func main() {
 	router := gin.Default()
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
+
 	router.LoadHTMLGlob("*.html")
 
 	//title
 	router.GET("/", func(ctx *gin.Context){
 		ctx.HTML(200, "index.html", gin.H{"page":0})
+
+
 	})
 
 	//CreateRoom
@@ -50,24 +53,45 @@ func main() {
 		ctx.HTML(200, "index.html", gin.H{"page":1,"Name":"gamehost"})
 	})
 
-	//Created
-	router.POST("/Created", func(ctx *gin.Context) {
-		//roomidを生成
-		id :=RandString1(20)
-		var host User
-		host.Id=ctx.Param("session_id")
-		host.Name=ctx.PostForm("text")
-		host.IsHost=true
-		//hostをサーバーに保存
-		ctx.Redirect(302, "/play/"+string(id))
-	})
 
 	//JoinGame
 	router.POST("/Join", func(ctx *gin.Context){
 		ctx.HTML(200, "index.html", gin.H{"page":2,"Name":"guest"})
 	})
 
+
+
+	//Created
+	router.POST("/Created", func(ctx *gin.Context) {
+		//roomidを生成
+		id :=RandString1(20)
+		//クッキーを作成
+		userid:=RandString1(32)
+		session := sessions.Default(ctx)
+
+		if session.Get("userid") != userid {
+			session.Set("userid", userid)
+			session.Save()
+		}
+		var host User
+		host.Id=ctx.Param("session_id")
+		host.Name=ctx.PostForm("text")
+		host.IsHost=true
+		//hostをサーバーに保存
+		
+		ctx.Redirect(302, "/play/"+string(id))
+	})
+
+	//Joined
 	router.POST("/Joined", func(ctx *gin.Context) {
+		//クッキーを作成
+		userid:=RandString1(32)
+		session := sessions.Default(ctx)
+		if session.Get("userid") != userid {
+			session.Set("userid", userid)
+			session.Save()
+		}
+
 		//guestをサーバーに保存
 		id:=ctx.PostForm("id")
 		ctx.Redirect(302, "/play/"+id)
@@ -76,25 +100,18 @@ func main() {
 	//Room page
 	router.GET("/play/:session_id", func(ctx *gin.Context) {
 
-		//使えるサーバーかどうか(ログイン済みか?参加ユーザか?)
-		available:=true
+		//セッションidが存在するか
+		//available:=true
 
-		//guest
-		var guest User
-		guest.Id=ctx.Param("id")
-		guest.Name=ctx.PostForm("text")
-		guest.IsHost=false
+		//クッキーからユーザを取得
 
-		//host
-		var host User
-		host.Id=ctx.Param("session_id")
-		host.Name="hostgame"
-		host.IsHost=true
 
 		//同一セッション内のユーザを全て取得
-		Users:= [...] User{host, host,host}
+		//Users:= [...] User{host, host,host}
 
-		ctx.HTML(200, "waiting.html", gin.H{"host": host,"available":available,"Users":Users})
+		//ctx.HTML(200, "waiting.html", gin.H{"host": host,"available":available,"Users":Users})
 	})
+
+
 	router.Run()
 }

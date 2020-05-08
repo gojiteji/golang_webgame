@@ -4,6 +4,7 @@
     <title>Sample App</title>
 </head>
 <body>
+
 {{if eq .available true}}
     <h2>Waiting For your Friends </h2>
     <br>
@@ -16,7 +17,7 @@
     {{ range .Users }}
         <li>{{.Name}}</li>
     {{end}}
-    <form method="post" action="/Join{{.host.Id}}}">
+    <form method="post" action="/Start">
         <button type="submit">Start</button>
     </form>
 {{else}}
