@@ -10,12 +10,14 @@
 	{{.info.Players}} players are playing now!
 	<br>
 
-	{{if eq .info.ServerStatus true}}
-		<button>Create a room</button>
-		<button>Join a room</button>
-
-	{{else}}
-		<a>Server is not in service.</a>
+	{{if eq .info.Page 0}}
+		<form method="post" action="/">
+			<button type="submit">Create a room</button>
+			<button type="submit">Join a room </button>
+		</form>
+	{{else if eq .info.Page 1}}
+		<a>{{.host.id}}</a>
+		<a>{{.host.name}}</a>
 	{{end}}
 		</center>
 	</body>

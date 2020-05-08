@@ -20,6 +20,13 @@ func main() {
 		pages.Generate_title(ctx)
 	})
 
+	//Create
+	router.POST("/new", func(ctx *gin.Context) {
+		ctx.Redirect(302, "/")
+		pages.Createroom(ctx)
+	})
+
+
 
 	router.GET("/play/:session_id", func(ctx *gin.Context){
 		session_id:= ctx.Param("session_id")
