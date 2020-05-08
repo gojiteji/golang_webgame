@@ -1,28 +1,23 @@
 <html lang="ja">
+<title>ヒトあつめ</title>
 <head>
     <meta charset="UTF-8">
     <title>Sample App</title>
 </head>
 <body>
 
-{{if eq .available true}}
+
     <h2>Waiting For your Friends </h2>
     <br>
     <a>share below room id to join!</a>
     <br>
-    <font color="green">{{.host.Id}}</font>
+    <font color="green">{{.id}}</font>
     <br>
-    host:{{.host.Name}}
     <br>
-    {{ range .Users }}
-        <li>{{.Name}}</li>
-    {{end}}
+    {{.myindex}}
     <form method="post" action="/Start">
         <button type="submit">Start</button>
     </form>
-{{else}}
-    <a>unavailable room</a>
-{{end}}
 
 </body>
 </html>

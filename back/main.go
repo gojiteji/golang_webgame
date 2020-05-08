@@ -112,33 +112,68 @@ func main() {
 			name="guest"
 		}
 		//ルームの存在確認
-		data, _ := redis.Bytes(conn.Do("HGET", id,"host_id"))
-		if data != nil {
+		_, err := redis.Int(conn.Do("HGET", id, "members"))
+		if err != nil {
+			ctx.Redirect(302, "/Join")
+			ctx.HTML(200, "index.html", gin.H{"page":2,"Name":"guest","message":"room id not found!"})
+		}else{
 			//ルームが満室か確認
 			members,_:=redis.Int(conn.Do("HGET", id, "members"))
 			if(members<6){
+				//既に同じクッキーげ入っていればサーバをアプううデートしない
+				//
 				conn.Do("HSET", id, "members", members+1)
 				conn.Do("HSET", id, "guest"+string(members)+"_id", userid)
 				conn.Do("HSET", id, "guest"+string(members)+"_name", name)
+				ctx.Redirect(302, "/play/"+string(id))
+
+			}else{
+				ctx.Redirect(302, "/Join")
+				ctx.HTML(200, "index.html", gin.H{"page":2,"Name":"guest","message":"room is full!"})
 			}
-			ctx.Redirect(302, "/Join")
-			ctx.HTML(200, "index.html", gin.H{"page":2,"message":"room id not found!"})
 		}
+
+
 	})
 
 	//Room page
 	router.GET("/play/:session_id", func(ctx *gin.Context) {
+		//ルームidが存在するか
+		id:= ctx.Param("id")
+		_, err := redis.Int(conn.Do("HGET", id, "members"))
+		if err.Error() ==  "nil returned"{
+			fmt.Println("REDIRECTING")
+			ctx.Redirect(302, "/")
+		}else {
+			//クッキーからユーザを取得
+			session := sessions.Default(ctx)
+			userid := session.Get("userid")
 
-		//セッションidが存在するか
-		//available:=true
+			//同一セッション内のユーザを全て取得
+			u0, _ := redis.String(conn.Do("HGET", id, "host_name"))
+			members,_:=redis.Int(conn.Do("HGET", id, "members"))
+			var u [6]string
+			u[0]=u0
+			i:=1
+			var myindex int
+			for {
+				if!(i<members){
+					break
+				}
+				u[i],_=redis.String(conn.Do("HGET", id, "guest"+string(i)+"_name"))
+				tmp,_:=redis.String(conn.Do("HGET", id, "guest"+string(i)+"_id"))
+				if(tmp==userid){
+					myindex=i
+				}
+				i=i+1
+			}
+			fmt.Println(u)
+			fmt.Println(myindex)
+			fmt.Println(id)
+			fmt.Println(userid)
 
-		//クッキーからユーザを取得
-
-		//session.Get("userid")
-		//同一セッション内のユーザを全て取得
-		//Users:= [...] User{host, host,host}
-
-		//ctx.HTML(200, "waiting.html", gin.H{"host": host,"available":available,"Users":Users})
+			ctx.HTML(200, "waiting.html", gin.H{"u": u,"myindex":myindex,"id":id})
+		}
 	})
 
 
