@@ -9,6 +9,9 @@
 
 <body>
 <script>
+    window.addEventListener('beforeunload', function(e) {
+        e.returnValue = 'leav room?';
+    }, false);
     if(document.referrer==""){
         var redirect_url = "http://localhost:8080";
         location.href = redirect_url;

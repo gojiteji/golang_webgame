@@ -13,12 +13,8 @@
 		{{.info.Players}} players are playing now!
 		<br>
 
-		<form method="post" action="/Create">
-			<button type="submit">Create a room</button>
-		</form>
-		<form method="post" action="/Join">
-			<button type="submit">Join a room</button>
-		</form>
+			<button type="submit" onclick="window.open('http://localhost:8080/Create','subwin','width=800,height=600');">Create a room</button>
+			<button type="submit" onclick="window.open('http://localhost:8080/Join','subwin','width=800,height=600');">Join a room</button>
 	{{else if eq .page 1}}
 		<br>
 		<h1>Room Setting</h1>

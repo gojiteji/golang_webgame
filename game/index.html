@@ -6,60 +6,240 @@
 <div id="pixiview"></div>
 <script>
     const app = new PIXI.Application({
-        width: 800, height: 600, backgroundColor: 0x1099bb, resolution: window.devicePixelRatio || 1,
+        width: 400, height: 300, backgroundColor: 0x2f4f4f, resolution: window.devicePixelRatio || 1,
     });
     document.body.appendChild(app.view);
 
-    const container = new PIXI.Container();
-    const container2= new PIXI.Container();
+    var home1 = new PIXI.Graphics();
+    home1.beginFill(0xdeb887);
+    home1.lineStyle(5, 0xd2b48c);
+    home1.drawCircle(60, 150, 50);
+    app.stage.addChild(home1);
 
-    app.stage.addChild(container);
-    app.stage.addChild(container2);
+    var home1tx = PIXI.Texture.from('./images/item/home1.png');
+    var home1sp = new PIXI.Sprite(home1tx);
+    home1sp.width=home1sp.width/15;
+    home1sp.height=home1sp.height/15;
+    home1sp.anchor.set(0.5,0.5);
+    home1sp.x = 60;
+    home1sp.y = 145;
+    home1sp.interactive = true;
+    app.stage.addChild(home1sp);
+
+    var home2 = new PIXI.Graphics();
+    home2.beginFill(0xdeb887);
+    home2.lineStyle(5, 0xd2b48c);
+    home2.drawCircle(340, 150, 50);
+    app.stage.addChild(home2);
+
+    var home2tx = PIXI.Texture.from('./images/item/home2.png');
+    var home2sp = new PIXI.Sprite(home2tx);
+    home2sp.width=home2sp.width/15;
+    home2sp.height=home2sp.height/15;
+    home2sp.anchor.set(0.5,0.5);
+    home2sp.x = 340;
+    home2sp.y = 145;
+    home2sp.interactive = true;
+    app.stage.addChild(home2sp);
+
+
 
     // Create a new texture
-    const texture = PIXI.Texture.from('./images/A/A.png');
+    var glass = PIXI.Texture.from('./images/item/glass.png');
+    for (i=0;i<20;i++) {
+        var glasssprite = new PIXI.Sprite(glass);
+        seed=Math.random()
+        glasssprite.width = glasssprite.width / 50;
+        glasssprite.height = glasssprite.height / 50;
+        glasssprite.anchor.set(0.5, 0.5);
+        glasssprite.x = Math.random()*380;
+        glasssprite.y = Math.random()*260;
+        glasssprite.interactive = true;
+        app.stage.addChild(glasssprite);
+    }
 
-    // Create a 5x5 grid of bunnies
-        const bunny = new PIXI.Sprite(texture);
-        bunny.width=bunny.width/20;
-        bunny.height=bunny.height/20;
-        bunny.anchor.set(0.5);
-        bunny.x = 40;
-        bunny.y = 40;
-        container.addChild(bunny);
+    var texture00 = PIXI.Texture.from('./images/A/A_0.png');
+    var texture01 = PIXI.Texture.from('./images/A/A_1.png');
+    var texture10 = PIXI.Texture.from('./images/A/A0.png');
+    var texture11 = PIXI.Texture.from('./images/A/A1.png');
 
-    const texture2 = PIXI.Texture.from('./images/B/B.png');
-    // Create a 5x5 grid of bunnies
-    const bunny2 = new PIXI.Sprite(texture2);
-    bunny2.width=bunny2.width/20;
-    bunny2.height=bunny2.height/20;
-    bunny2.anchor.set(0.5);
-    bunny2.x = 0;
-    bunny2.y = 0;
-    container2.addChild(bunny2);
+    var sprite = new PIXI.Sprite(texture01);
+    sprite.width=sprite.width/30;
+    sprite.height=sprite.height/30;
+    sprite.anchor.set(0.5,0.5);
+    sprite.x = 200;
+    sprite.y = 200;
+    sprite.interactive = true;
+    app.stage.addChild(sprite);
 
-    // Move container to the center
-    container.x = 200//app.screen.width / 2;
-    container.y = 200//app.screen.height / 2;
 
-    container2.x = 700//app.screen.width / 2;
-    container2.y = 200//app.screen.height / 2;
+    function speed(a,b){
+        c=a-b>0?1:-1;
+        if(a-b<1 && a-b>0){
+            c=0
+        }
+        return c
+    }
 
-    // Center bunny sprite in local container coordinates
-    container.pivot.x = container.width / 2;
-    container.pivot.y = container.height / 2;
+    personlist=[]
+    class  Passenger{
+        constructor(x,y,vx,vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.index = Math.floor(Math.random() * 11)
+            this.person = new PIXI.Sprite(PIXI.Texture.from('./images/Person/' + this.index.toString() + '.png'));
+            this.person.width = this.person.width / 10;
+            this.person.height = this.person.height / 10;
+            this.person.x =this.x;
+            this.person.y =this.y;
+            this.person.anchor.set(0.5, 0.5);
+            this.person.interactive = true;
+            this.attracted=false
+        }
+        show() {
+            app.stage.addChild(this.person);
+        }
+        hide(){
+            app.stage.remove(this.person)
+        }
+    }
+    function Persongenerator(){
+        if(Math.random()>0.5) {
+            //上から出現
+            x = 100+Math.random()*380
+            y = 0
+            vx=Math.random()-0.5
+            vy=Math.random()
+        }else{
+            //下から出現
+            x = Math.random()*380
+            y = 285
+            vx=Math.random()-0.5
+            vy=-Math.random()
+        }
+        let person = new Passenger(x,y,vx,vy)
+        person.show()
+        personlist.push(person)
+    }
 
-    container2.pivot.x = container2.width / 2;
-    container2.pivot.y = container2.height / 2;
-
+   
+    var max_stamp=35
+    stamps=[]
+    var count_stamp=0
+    var speedcoeff=0.5
+    var sx=0
+    var sy=0
+    var x_0=0
+    var y_0=0
+    var footprint=false
+    footwidth=5
+    switchfooot=true
     // Listen for animate update
     app.ticker.add((delta) => {
-        // rotate the container!
-        // use delta to create frame-independent transform
-        container.x += 1 * delta;
-        container.y += 1 * delta;
-        container2.x += 0 * delta;
-        container2.y += 0 * delta;
+        for(j=0;j<personlist.length;j++){
+            personlist[j].person.x+=personlist[j].vx*delta;
+            personlist[j].person.y+=personlist[j].vy*delta;
+        }
+        px=sx
+        py=sy
+        dx=Math.abs(app.renderer.plugins.interaction.mouse.global.x-sprite.x)
+        dy=Math.abs(app.renderer.plugins.interaction.mouse.global.y-sprite.y)
+
+        sx=speed(app.renderer.plugins.interaction.mouse.global.x,sprite.x)
+        sy=speed(app.renderer.plugins.interaction.mouse.global.y,sprite.y)
+        if(sy==0&&sx==0&&sprite.texture==texture11){
+            sprite.texture=texture10
+        }
+
+        if(sprite.y<sprite.height*0.8&&sy<0){
+            sy=0
+        }
+        if(sprite.y>285&&sy>0){
+            sy=0
+        }
+        if(sprite.x<sprite.width*0.6&&sx<0){
+            sx=0
+        }
+        if(sprite.x>380&&sx>0){
+            sx=0
+        }
+
+        if (sx<0){
+                sprite.texture=switchfooot?texture00:texture01;
+        } else if(sx>0){
+                sprite.texture=switchfooot?texture10:texture11;
+        }else if (sx==0&&(!(sy==0) )){
+                sprite.texture=switchfooot?texture10:texture11;
+        }
+
+        if(sy==0&&sx==0&&sprite.texture==texture01){
+                sprite.texture=texture00
+        }
+        if(sy==0&&sx==0&&sprite.texture==texture01){
+            sprite.texture=texture00
+        }
+
+
+
+        sprite.x += sx*speedcoeff*delta;
+        sprite.y += sy*speedcoeff*delta;
+        if(footprint) {
+            if (Math.pow(Math.abs(sprite.x) - Math.abs(x_0), 2) + Math.pow(Math.abs(sprite.y) - Math.abs(y_0), 2) > footwidth*footwidth) {
+                count_stamp=count_stamp+1
+                switch (Math.abs(sx)>Math.abs(sy)){
+                    case true:
+                        if(sx>0){
+
+                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_r.png'));
+                        }else{
+                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_l.png'));
+                        }
+                        break;
+                    case false:
+                        if(sy>0){
+                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_d.png'));
+                        }else{
+                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_u.png'));
+                        }
+                        break;
+                }
+
+                a_stmap_sprite.width = sprite.width / 5;
+                a_stmap_sprite.height = sprite.height / 5;
+
+                a_stmap_sprite.anchor.set(Math.random()*switchfooot, -Math.random()*switchfooot);
+                a_stmap_sprite.x = sprite.x;
+                a_stmap_sprite.y = sprite.y;
+                app.stage.addChild(a_stmap_sprite);
+                a_stmap_sprite.anchor.set(Math.random()*!switchfooot, -Math.random()*!switchfooot);
+                a_stmap_sprite.x = sprite.x;
+                a_stmap_sprite.y = sprite.y+5;
+                app.stage.addChild(a_stmap_sprite);
+                app.stage.removeChild(sprite);
+                app.stage.addChild(sprite)
+                footprint=false
+                x_0=sprite.x
+                y_0=sprite.y
+                switchfooot=!switchfooot
+                stamps.push(a_stmap_sprite)
+                if(count_stamp>=max_stamp){
+                    app.stage.removeChild(stamps.shift())
+                }
+            }
+        }else{
+            if(sx || sy){
+                footprint=true
+            }
+        }
+        //足跡距離更新
+        if(Math.abs(Math.abs(sprite.x)-Math.abs(x_0))>footwidth){
+            x_0=sprite.x
+        }
+        if(Math.abs(Math.abs(sprite.y)-Math.abs(y_0)>footwidth)){
+            y_0=sprite.y
+        }
 
     });
 

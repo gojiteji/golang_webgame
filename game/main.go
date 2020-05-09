@@ -8,7 +8,7 @@ import (
 
 func main() {
 	router := gin.Default()
-	router.Static("/images", "./images")
+	router.Static("/images", "./images/")
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
 	router.Use(cors.New(config))

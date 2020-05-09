@@ -63,14 +63,13 @@ func main() {
 	})
 
 	//CreateRoom
-	router.POST("/Create", func(ctx *gin.Context) {
-		ctx.Redirect(302, "/")
+	router.GET("/Create", func(ctx *gin.Context) {
 		ctx.HTML(200, "index.html", gin.H{"page":1,"Name":"gamehost"})
 	})
 
 
 	//JoinGame
-	router.POST("/Join", func(ctx *gin.Context){
+	router.GET("/Join", func(ctx *gin.Context){
 		ctx.HTML(200, "index.html", gin.H{"page":2,"Name":"guest"})
 	})
 
@@ -226,11 +225,12 @@ func main() {
 	})
 
 	router.GET("/game/:session_id", func(ctx *gin.Context) {
+		/*session := sessions.Default(ctx)
 		userid:= session.Get("userid")
 		username:=session.Get("username")
 		username:=session.Get("roomid")
 		x:=0
-		y:=0
+		y:=0*/
 		//id:= ctx.Param("session_id")
 			ctx.HTML(200, "game.html", gin.H{"message": "gamestarted"})
 	})
