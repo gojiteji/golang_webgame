@@ -225,8 +225,12 @@ func main() {
 			m.HandleRequest(ctx.Writer, ctx.Request)
 	})
 
-	router.GET("/Start/:session_id", func(ctx *gin.Context) {
-		//ルームidが存在するか
+	router.GET("/game/:session_id", func(ctx *gin.Context) {
+		userid:= session.Get("userid")
+		username:=session.Get("username")
+		username:=session.Get("roomid")
+		x:=0
+		y:=0
 		//id:= ctx.Param("session_id")
 			ctx.HTML(200, "game.html", gin.H{"message": "gamestarted"})
 	})
