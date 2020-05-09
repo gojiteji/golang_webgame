@@ -58,19 +58,6 @@
         app.stage.addChild(glasssprite);
     }
 
-    var texture00 = PIXI.Texture.from('./images/A/A_0.png');
-    var texture01 = PIXI.Texture.from('./images/A/A_1.png');
-    var texture10 = PIXI.Texture.from('./images/A/A0.png');
-    var texture11 = PIXI.Texture.from('./images/A/A1.png');
-
-    var sprite = new PIXI.Sprite(texture01);
-    sprite.width=sprite.width/30;
-    sprite.height=sprite.height/30;
-    sprite.anchor.set(0.5,0.5);
-    sprite.x = 200;
-    sprite.y = 200;
-    sprite.interactive = true;
-    app.stage.addChild(sprite);
 
 
     function speed(a,b){
@@ -84,12 +71,14 @@
     personlist=[]
     class  Passenger{
         constructor(x,y,vx,vy) {
+
             this.x = x;
             this.y = y;
             this.vx = vx;
             this.vy = vy;
+
             this.index = Math.floor(Math.random() * 11)
-            this.person = new PIXI.Sprite(PIXI.Texture.from('./images/Person/' + this.index.toString() + '.png'));
+            this.person = new PIXI.Sprite(PIXI.Texture.from('./images/Person/'+this.index+'.png'));
             this.person.width = this.person.width / 10;
             this.person.height = this.person.height / 10;
             this.person.x =this.x;
@@ -97,12 +86,10 @@
             this.person.anchor.set(0.5, 0.5);
             this.person.interactive = true;
             this.attracted=false
+
         }
-        show() {
+        show(){
             app.stage.addChild(this.person);
-        }
-        hide(){
-            app.stage.remove(this.person)
         }
     }
     function Persongenerator(){
@@ -124,122 +111,149 @@
         personlist.push(person)
     }
 
-   
-    var max_stamp=35
-    stamps=[]
-    var count_stamp=0
-    var speedcoeff=0.5
-    var sx=0
-    var sy=0
-    var x_0=0
-    var y_0=0
-    var footprint=false
-    footwidth=5
-    switchfooot=true
+    class cat{
+        constructor(x,y,team) {
+
+            this.max_stamp=35
+            this.stamps=[]
+            this.count_stamp=0
+            this.speedcoeff=0.5
+            this.sx=0
+            this.sy=0
+            this.x_0=0
+            this.y_0=0
+            this.footprint=false
+            this.footwidth=5
+            this.switchfooot=true
+
+            this.x = x;
+            this.y = y;
+            this.texture00 = PIXI.Texture.from('./images/'+team+'/'+team+'_0.png');
+            this.texture01 = PIXI.Texture.from('./images/'+team+'/'+team+'_1.png');
+            this.texture10 = PIXI.Texture.from('./images/'+team+'/'+team+'0.png');
+            this.texture11 = PIXI.Texture.from('./images/'+team+'/'+team+'1.png');
+
+            this.sprite = new PIXI.Sprite(this.texture01);
+            this.sprite.width=this.sprite.width/30;
+            this.sprite.height=this.sprite.height/30;
+            this.sprite.anchor.set(0.5,0.5);
+            this.sprite.x = 200;
+            this.sprite.y = 200;
+            this.sprite.interactive = true;
+            app.stage.addChild(this.sprite);
+        }
+        render(delta){
+            this.px=this.sx
+            this.py=this.sy
+            this.dx=Math.abs(app.renderer.plugins.interaction.mouse.global.x-this.sprite.x)
+            this.dy=Math.abs(app.renderer.plugins.interaction.mouse.global.y-this.sprite.y)
+
+            this.sx=speed(app.renderer.plugins.interaction.mouse.global.x,this.sprite.x)
+            this.sy=speed(app.renderer.plugins.interaction.mouse.global.y,this.sprite.y)
+            if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture11){
+                this.sprite.texture=this.texture10
+            }
+
+            if(this.sprite.y<this.sprite.height*0.8&&this.sy<0){
+                this.sy=0
+            }
+            if(this.sprite.y>285&&this.sy>0){
+                this.sy=0
+            }
+            if(this.sprite.x<this.sprite.width*0.6&&this.sx<0){
+                this.sx=0
+            }
+            if(this.sprite.x>380&&this.sx>0){
+                this.sx=0
+            }
+
+            if (this.sx<0){
+                this.sprite.texture=this.switchfooot?this.texture00:this.texture01;
+            } else if(this.sx>0){
+                this.sprite.texture=this.switchfooot?this.texture10:this.texture11;
+            }else if (this.sx==0&&(!(this.sy==0) )){
+                this.sprite.texture=this.switchfooot?this.texture10:this.texture11;
+            }
+
+            if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture01){
+                this.sprite.texture=this.texture00
+            }
+            if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture01){
+                this.sprite.texture=this.texture00
+            }
+
+
+
+            this.sprite.x += this.sx*this.speedcoeff*delta;
+            this.sprite.y +=this. sy*this.speedcoeff*delta;
+            if(this.footprint) {
+                if (Math.pow(Math.abs(this.sprite.x) - Math.abs(this.x_0), 2) + Math.pow(Math.abs(this.sprite.y) - Math.abs(this.y_0), 2) > this.footwidth*this.footwidth) {
+                    this.count_stamp=this.count_stamp+1
+                    switch (Math.abs(this.sx)>Math.abs(this.sy)){
+                        case true:
+                            if(this.sx>0){
+
+                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_r.png'));
+                            }else{
+                               this. a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_l.png'));
+                            }
+                            break;
+                        case false:
+                            if(this.sy>0){
+                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_d.png'));
+                            }else{
+                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_u.png'));
+                            }
+                            break;
+                    }
+
+                    this.a_stmap_sprite.width = this.sprite.width / 5;
+                    this. a_stmap_sprite.height = this.sprite.height / 5;
+
+                    this.a_stmap_sprite.anchor.set(Math.random()*this.switchfooot, -Math.random()*this.switchfooot);
+                    this.a_stmap_sprite.x = this.sprite.x;
+                    this.a_stmap_sprite.y = this.sprite.y;
+                    app.stage.addChild(this.a_stmap_sprite);
+                    this.a_stmap_sprite.anchor.set(Math.random()*!this.switchfooot, -Math.random()*!this.switchfooot);
+                    this.a_stmap_sprite.x = this.sprite.x;
+                    this.a_stmap_sprite.y = this.sprite.y+5;
+                    app.stage.addChild(this.a_stmap_sprite);
+                    app.stage.removeChild(this.sprite);
+                    app.stage.addChild(this.sprite)
+                    this.footprint=false
+                    this.x_0=this.sprite.x
+                    this.y_0=this.sprite.y
+                    this.switchfooot=!this.switchfooot
+                    this.stamps.push(this.a_stmap_sprite)
+                    if(this.count_stamp>=this.max_stamp){
+                        app.stage.removeChild(this.stamps.shift())
+                    }
+                }
+            }else{
+                if(this.sx || this.sy){
+                    this.footprint=true
+                }
+            }
+            //足跡距離更新
+            if(Math.abs(Math.abs(this.sprite.x)-Math.abs(this.x_0))>this.footwidth){
+                this.x_0=this.sprite.x
+            }
+            if(Math.abs(Math.abs(this.sprite.y)-Math.abs(this.y_0)>this.footwidth)){
+                this.y_0=this.sprite.y
+            }
+        }
+    }
+
     // Listen for animate update
+    let kittle = new cat(10,150,'A')
     app.ticker.add((delta) => {
         for(j=0;j<personlist.length;j++){
             personlist[j].person.x+=personlist[j].vx*delta;
             personlist[j].person.y+=personlist[j].vy*delta;
         }
-        px=sx
-        py=sy
-        dx=Math.abs(app.renderer.plugins.interaction.mouse.global.x-sprite.x)
-        dy=Math.abs(app.renderer.plugins.interaction.mouse.global.y-sprite.y)
 
-        sx=speed(app.renderer.plugins.interaction.mouse.global.x,sprite.x)
-        sy=speed(app.renderer.plugins.interaction.mouse.global.y,sprite.y)
-        if(sy==0&&sx==0&&sprite.texture==texture11){
-            sprite.texture=texture10
-        }
+        kittle.render(delta)
 
-        if(sprite.y<sprite.height*0.8&&sy<0){
-            sy=0
-        }
-        if(sprite.y>285&&sy>0){
-            sy=0
-        }
-        if(sprite.x<sprite.width*0.6&&sx<0){
-            sx=0
-        }
-        if(sprite.x>380&&sx>0){
-            sx=0
-        }
-
-        if (sx<0){
-                sprite.texture=switchfooot?texture00:texture01;
-        } else if(sx>0){
-                sprite.texture=switchfooot?texture10:texture11;
-        }else if (sx==0&&(!(sy==0) )){
-                sprite.texture=switchfooot?texture10:texture11;
-        }
-
-        if(sy==0&&sx==0&&sprite.texture==texture01){
-                sprite.texture=texture00
-        }
-        if(sy==0&&sx==0&&sprite.texture==texture01){
-            sprite.texture=texture00
-        }
-
-
-
-        sprite.x += sx*speedcoeff*delta;
-        sprite.y += sy*speedcoeff*delta;
-        if(footprint) {
-            if (Math.pow(Math.abs(sprite.x) - Math.abs(x_0), 2) + Math.pow(Math.abs(sprite.y) - Math.abs(y_0), 2) > footwidth*footwidth) {
-                count_stamp=count_stamp+1
-                switch (Math.abs(sx)>Math.abs(sy)){
-                    case true:
-                        if(sx>0){
-
-                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_r.png'));
-                        }else{
-                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_l.png'));
-                        }
-                        break;
-                    case false:
-                        if(sy>0){
-                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_d.png'));
-                        }else{
-                            a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_u.png'));
-                        }
-                        break;
-                }
-
-                a_stmap_sprite.width = sprite.width / 5;
-                a_stmap_sprite.height = sprite.height / 5;
-
-                a_stmap_sprite.anchor.set(Math.random()*switchfooot, -Math.random()*switchfooot);
-                a_stmap_sprite.x = sprite.x;
-                a_stmap_sprite.y = sprite.y;
-                app.stage.addChild(a_stmap_sprite);
-                a_stmap_sprite.anchor.set(Math.random()*!switchfooot, -Math.random()*!switchfooot);
-                a_stmap_sprite.x = sprite.x;
-                a_stmap_sprite.y = sprite.y+5;
-                app.stage.addChild(a_stmap_sprite);
-                app.stage.removeChild(sprite);
-                app.stage.addChild(sprite)
-                footprint=false
-                x_0=sprite.x
-                y_0=sprite.y
-                switchfooot=!switchfooot
-                stamps.push(a_stmap_sprite)
-                if(count_stamp>=max_stamp){
-                    app.stage.removeChild(stamps.shift())
-                }
-            }
-        }else{
-            if(sx || sy){
-                footprint=true
-            }
-        }
-        //足跡距離更新
-        if(Math.abs(Math.abs(sprite.x)-Math.abs(x_0))>footwidth){
-            x_0=sprite.x
-        }
-        if(Math.abs(Math.abs(sprite.y)-Math.abs(y_0)>footwidth)){
-            y_0=sprite.y
-        }
 
     });
 
