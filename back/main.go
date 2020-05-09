@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gomodule/redigo/redis"
 	"gopkg.in/olahol/melody.v1"
@@ -11,7 +10,6 @@ import (
 	"time"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
-	"unsafe"
 	//"./pages"
 	"github.com/jinzhu/gorm"
 )
@@ -40,43 +38,6 @@ func RandString1(n int) string {
 
 
 
-
-func wait(m *melody.Melody,id string,ctx *gin.Context,IsHost bool,myindex int,u [6]string,i int){
-
-	m.HandleMessage(func(s *melody.Session, msg []byte) {
-		m.Broadcast(msg)
-	})
-
-	m.HandleConnect(func(s *melody.Session) {
-		log.Printf("websocket connection open. [session: %#v]\n", s)
-	})
-
-	m.HandleDisconnect(func(s *melody.Session) {
-		log.Printf("websocket connection close. [session: %#v]\n", s)
-	})
-
-	conn, err := redis.Dial("tcp", "localhost:9000")
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-	psc := redis.PubSubConn{Conn: conn}
-	psc.Subscribe("PubSub"+id)
-	for {
-		switch v:= psc.Receive().(type) {
-		case redis.Message:
-
-			fmt.Printf(*(*string)(unsafe.Pointer(&v.Data)))
-			fmt.Println()
-			m.HandleRequest(ctx.Writer, ctx.Request)
-			break;
-		case redis.Subscription:
-			break;
-		case error:
-			return
-		}
-	}
-}
 
 func main() {
 	m := melody.New()
@@ -230,12 +191,23 @@ func main() {
 					}
 					i=i+1
 			}
-				ctx.HTML(200, "waiting.html", gin.H{"u": u, "myindex": myindex + 1, "id": id, "IsHost": IsHost})
+				ctx.HTML(200, "waiting.html", gin.H{"u": u[:i], "myindex": myindex + 1, "id": id, "IsHost": IsHost,"myname":u[myindex]})
 
 			//待機
-			go wait(m,id,ctx,IsHost,myindex,u,i)
 
 		}
+	})
+
+	m.HandleMessage(func(s *melody.Session, msg []byte) {
+		m.Broadcast(msg)
+	})
+
+	m.HandleConnect(func(s *melody.Session) {
+		log.Printf("websocket connection open. [session: %#v]\n", s)
+	})
+
+	m.HandleDisconnect(func(s *melody.Session) {
+		log.Printf("websocket connection close. [session: %#v]\n", s)
 	})
 
 	rg := router.Group("/sampleapp")
