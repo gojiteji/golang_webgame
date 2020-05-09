@@ -9,7 +9,13 @@
 
 <body>
 <script>
-    var url = "ws://" + window.location.host + "/sampleapp/ws";
+    if(document.referrer==""){
+        var redirect_url = "http://localhost:8080";
+        location.href = redirect_url;
+    }
+
+
+    var url = "ws://" + window.location.host + "/socketloc/ws/"+{{.id}};
     var name = {{.myname}};
     var mem={{.u}}
     ws = new WebSocket(url);
@@ -17,16 +23,27 @@
 
     var text = document.getElementById("text");
     ws.onmessage = function (msg) {
-        if((runonce) && (msg.data==name)) {
-            runonce=false
-        }else{ document.getElementById("members").appendChild(document.createElement("li")).innerText = msg.data}
-
+            if (msg.data =={{.id}}) {
+                location.href = "https://google.com"
+            }else if (!(msg.data.length==20)){
+                if ((runonce) && (msg.data == name)) {
+                    runonce = false
+                } else {
+                    document.getElementById("members").appendChild(document.createElement("li")).innerText = msg.data
+                }
+            }
     };
     function sendms(){
         ws.send(name)
     }
 
     setTimeout("sendms();", 1500);
+    {{if eq .IsHost true}}
+    function start(){
+        ws.send({{.id}})
+    }
+    {{end}}
+
 </script>
 
 
@@ -45,9 +62,7 @@
     {{.myindex}}. is you.
     <br>
     {{if eq .IsHost true}}
-    <form id="form" method="get" action="/Start">
-        <button type="submit">Start</button>
-    </form>
+        <button type="submit" onclick="start()">Start</button>
     {{end}}
 </body>
 </html>

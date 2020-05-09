@@ -127,6 +127,12 @@ func main() {
 			//ルームが満室か確認
 			members,_:=redis.Int(conn.Do("HGET", id, "members"))
 			if(members<6){
+				//roomidをcookieに記述
+				if session.Get("roomid") != userid {
+					session.Set("roomid", id)
+					session.Save()
+				}
+
 				//既に同じクッキーが入っていればサーバをアプううデートしない
 				//
 				conn.Do("HSET", id, "members", members+1)
@@ -210,13 +216,13 @@ func main() {
 		log.Printf("websocket connection close. [session: %#v]\n", s)
 	})
 
-	rg := router.Group("/sampleapp")
+	rg := router.Group("/socketloc")
 	rg.GET("/", func(ctx *gin.Context) {
 		http.ServeFile(ctx.Writer, ctx.Request, "index.html")
 	})
 
-	rg.GET("/ws", func(ctx *gin.Context) {
-		m.HandleRequest(ctx.Writer, ctx.Request)
+	rg.GET("/ws/:session_id", func(ctx *gin.Context) {
+			m.HandleRequest(ctx.Writer, ctx.Request)
 	})
 
 	router.GET("/Start/:session_id", func(ctx *gin.Context) {
