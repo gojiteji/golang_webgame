@@ -16,6 +16,31 @@
     home1.drawCircle(60, 150, 50);
     app.stage.addChild(home1);
 
+
+
+    var ScoreA =  new PIXI.Text(name,
+        {
+            //   fontFamily: 'Arial',   // フォント
+            fontSize: 20,
+            fill : 0xFDBE00,       // 文字色
+            stroke: 0x000000,      // アウトラインの色
+            strokeThickness: 2,    // アウトラインの太さ
+            align: 'center',       // 文字揃え(複数行の場合に有効)
+        });
+    ScoreA.x=10
+    ScoreA.y=10
+    var ScoreB =  new PIXI.Text(name,
+        {
+            //   fontFamily: 'Arial',   // フォント
+            fontSize: 20,
+            fill : 0xFDBE00,       // 文字色
+            stroke: 0x000000,      // アウトラインの色
+            strokeThickness: 2,    // アウトラインの太さ
+            align: 'center',       // 文字揃え(複数行の場合に有効)
+        });
+    ScoreB.x=270
+    ScoreB.y=10
+
     var home1tx = PIXI.Texture.from('./images/item/home1.png');
     var home1sp = new PIXI.Sprite(home1tx);
     home1sp.width=home1sp.width/15;
@@ -76,20 +101,91 @@
             this.y = y;
             this.vx = vx;
             this.vy = vy;
+            this.x_0=x
+            this.y_0=y
 
-            this.index = Math.floor(Math.random() * 11)
-            this.person = new PIXI.Sprite(PIXI.Texture.from('./images/Person/'+this.index+'.png'));
-            this.person.width = this.person.width / 10;
-            this.person.height = this.person.height / 10;
+            //this.index = Math.floor(Math.random() * 11)
+            this.t0=PIXI.Texture.from('./images/Person/unhappy0.png')
+            this.t1=PIXI.Texture.from('./images/Person/unhappy1.png')
+            this.t2=PIXI.Texture.from('./images/Person/happy0.png')
+            this.t3=PIXI.Texture.from('./images/Person/happy1.png')
+
+            this.person = new PIXI.Sprite(this.t0);
+            this.person.width = this.person.width / 20;
+            this.person.height = this.person.height / 20;
             this.person.x =this.x;
             this.person.y =this.y;
-            this.person.anchor.set(0.5, 0.5);
+            this.person.anchor.set(0.5, 1.0);
             this.person.interactive = true;
             this.attracted=false
+            this.owner=null
+            this.switch=false
+            this.line=0
+            this.sumdelta=0
+            this.isIn=false
+            this.scoreline=0
 
         }
         show(){
             app.stage.addChild(this.person);
+        }
+        update(delta){
+            if(this.person.x<0||this.person.x>400||this.person.y<0||this.person.y>300){
+                app.stage.removeChild(this.person);
+            }
+            if(this.attracted){
+                this.sumdelta+=delta
+                if(this.sumdelta>20) {
+                    if((!this.isIn)&&((Math.pow(60-this.person.x,2)+Math.pow(150-this.person.y,2))<2500)){
+                        this.owner.holdings-=1
+                        score_a+=1
+                        this.isIn=true
+                        this.scoreline=score_a
+                    }else {
+                        this.switch = !this.switch
+                        this.x_0 = this.person.x
+                        this.y_0 = this.person.y
+                        this.person.texture = this.switch ? this.t2 : this.t3
+                        this.sumdelta = 0
+                    }
+                }
+
+            }else{
+                if(Math.abs(this.x_0-this.person.x)>5  ||  Math.abs(this.y_0-this.person.y)>5) {
+                    this.switch=!this.switch
+                    this.x_0=this.person.x
+                    this.y_0=this.person.y
+                    this.person.texture = this.switch ? this.t0 : this.t1
+                }
+            }if(this.isIn){
+                this.person.x=10+this.scoreline*3
+                this.person.y=150
+            }else{
+            if(this.attracted){
+                this.person.x=this.owner.stamps[this.line*2].x;
+                this.person.y=this.owner.stamps[this.line*2].y;
+            }else{
+                this.person.x+=this.vx*delta;
+                this.person.y+=this.vy*delta;
+            }
+            }
+        }
+    }
+    function stampchecker(k,p){
+        if(k.holdings<5) {
+            for (i = 0; i < p.length; i++) {
+                if (p[i].attracted == false) {
+                    for (j = 0; j < k.stamps.length; j++) {
+                        if (Math.abs(k.stamps[j].x - p[i].person.x) < 10 && (Math.abs(k.stamps[j].y - p[i].person.y) < 20)) {
+                            k.holdings = k.holdings + 1
+                            p[i].line = k.holdings
+                            p[i].owner = k
+                            p[i].attracted = true
+                            break
+                        }
+                    }
+                }
+            }
         }
     }
     function Persongenerator(){
@@ -112,9 +208,19 @@
     }
 
     class cat{
-        constructor(x,y,team) {
-
-            this.max_stamp=35
+        constructor(x,y,team,name) {
+            this.score=0
+            this.name=name
+            this.text =  new PIXI.Text(name,
+                {
+                    //   fontFamily: 'Arial',   // フォント
+                    fontSize: 10,
+                    fill : 0xFDBE00,       // 文字色
+                    stroke: 0x000000,      // アウトラインの色
+                    strokeThickness: 2,    // アウトラインの太さ
+                       align: 'center',       // 文字揃え(複数行の場合に有効)
+                });
+            this.max_stamp=13
             this.stamps=[]
             this.count_stamp=0
             this.speedcoeff=0.5
@@ -125,7 +231,7 @@
             this.footprint=false
             this.footwidth=5
             this.switchfooot=true
-
+            this.holdings=0
             this.x = x;
             this.y = y;
             this.texture00 = PIXI.Texture.from('./images/'+team+'/'+team+'_0.png');
@@ -137,12 +243,16 @@
             this.sprite.width=this.sprite.width/30;
             this.sprite.height=this.sprite.height/30;
             this.sprite.anchor.set(0.5,0.5);
-            this.sprite.x = 200;
-            this.sprite.y = 200;
+            this.sprite.x = this.x;
+            this.sprite.y = this.y;
+            this.text.x =  this.sprite.x-10;
+            this.text.y =  this.sprite.y-25;
             this.sprite.interactive = true;
             app.stage.addChild(this.sprite);
+            app.stage.addChild(this.text);
+
         }
-        render(delta){
+        update(delta){
             this.px=this.sx
             this.py=this.sy
             this.dx=Math.abs(app.renderer.plugins.interaction.mouse.global.x-this.sprite.x)
@@ -181,11 +291,10 @@
             if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture01){
                 this.sprite.texture=this.texture00
             }
-
-
-
             this.sprite.x += this.sx*this.speedcoeff*delta;
             this.sprite.y +=this. sy*this.speedcoeff*delta;
+            this.text.x =  this.sprite.x-10;
+            this.text.y =  this.sprite.y-25;
             if(this.footprint) {
                 if (Math.pow(Math.abs(this.sprite.x) - Math.abs(this.x_0), 2) + Math.pow(Math.abs(this.sprite.y) - Math.abs(this.y_0), 2) > this.footwidth*this.footwidth) {
                     this.count_stamp=this.count_stamp+1
@@ -220,6 +329,8 @@
                     app.stage.addChild(this.a_stmap_sprite);
                     app.stage.removeChild(this.sprite);
                     app.stage.addChild(this.sprite)
+                    app.stage.removeChild(this.text);
+                    app.stage.addChild(this.text)
                     this.footprint=false
                     this.x_0=this.sprite.x
                     this.y_0=this.sprite.y
@@ -245,15 +356,24 @@
     }
 
     // Listen for animate update
-    let kittle = new cat(10,150,'A')
+    let kittle = new cat(60,120,'A','you')
+    var score_a=0
+    var score_b=0
+
+    var stamploc=[]
     app.ticker.add((delta) => {
         for(j=0;j<personlist.length;j++){
-            personlist[j].person.x+=personlist[j].vx*delta;
-            personlist[j].person.y+=personlist[j].vy*delta;
-        }
+        personlist[j].update(delta)
+    }
 
-        kittle.render(delta)
-
+        kittle.update(delta)
+        stampchecker(kittle,personlist)
+        ScoreA.text="catched:"+score_a.toString()
+        ScoreB.text="catched:"+score_b.toString()
+        app.stage.removeChild(ScoreA)
+        app.stage.removeChild(ScoreB)
+        app.stage.addChild(ScoreA);
+        app.stage.addChild(ScoreB);
 
     });
 
