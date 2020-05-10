@@ -15,9 +15,25 @@
     home1.lineStyle(5, 0xd2b48c);
     home1.drawCircle(60, 150, 50);
     app.stage.addChild(home1);
-
-
-
+var playing =true
+    function finish() {
+        let filter = new PIXI.filters.BlurFilter();
+        playing=false
+        var fintxt =  new PIXI.Text(name,
+            {
+                //   fontFamily: 'Arial',   // フォント
+                fontSize: 100,
+                fill : 0xFDBE00,       // 文字色
+                stroke: 0x000000,      // アウトラインの色
+                strokeThickness: 20,    // アウトラインの太さ
+                align: 'center',       // 文字揃え(複数行の場合に有効)
+            });
+        fintxt.x=80
+        fintxt.y=100
+        fintxt.text="FIN !"
+        app.filters=[filter];
+        app.stage.addChild(fintxt);
+    }
     var ScoreA =  new PIXI.Text(name,
         {
             //   fontFamily: 'Arial',   // フォント
@@ -40,6 +56,26 @@
         });
     ScoreB.x=270
     ScoreB.y=10
+
+    var showtime =  new PIXI.Text(name,
+        {
+            //   fontFamily: 'Arial',   // フォント
+            fontSize: 20,
+            fill : 0xffffff,       // 文字色
+            stroke: 0x000000,      // アウトラインの色
+            strokeThickness: 2,    // アウトラインの太さ
+            align: 'center',       // 文字揃え(複数行の場合に有効)
+        });
+    showtime.x=180
+    showtime.y=10
+
+    function settime(text){
+        showtime.text=text
+        app.stage.addChild(showtime);
+        if(text=="0"){
+            finish()
+        }
+    }
 
     var home1tx = PIXI.Texture.from('./images/item/home1.png');
     var home1sp = new PIXI.Sprite(home1tx);
@@ -361,19 +397,23 @@
     var score_b=0
 
     var stamploc=[]
-    app.ticker.add((delta) => {
-        for(j=0;j<personlist.length;j++){
-        personlist[j].update(delta)
-    }
 
-        kittle.update(delta)
-        stampchecker(kittle,personlist)
-        ScoreA.text="catched:"+score_a.toString()
-        ScoreB.text="catched:"+score_b.toString()
-        app.stage.removeChild(ScoreA)
-        app.stage.removeChild(ScoreB)
-        app.stage.addChild(ScoreA);
-        app.stage.addChild(ScoreB);
+    app.ticker.add((delta) => {
+
+        if(playing) {
+            for (j = 0; j < personlist.length; j++) {
+                personlist[j].update(delta)
+            }
+
+            kittle.update(delta)
+            stampchecker(kittle, personlist)
+            ScoreA.text = "catched:" + score_a.toString()
+            ScoreB.text = "catched:" + score_b.toString()
+            app.stage.removeChild(ScoreA)
+            app.stage.removeChild(ScoreB)
+            app.stage.addChild(ScoreA);
+            app.stage.addChild(ScoreB);
+        }
 
     });
 
