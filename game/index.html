@@ -6,12 +6,14 @@
 <div id="pixiview"></div>
 <script>
 
-    var url = "ws://" + "localhost:8080" + "/ws";
+    var url = "ws://" + "localhost:8080" + "/ws/a";
     ws = new WebSocket(url);
 
 
     player_num=1
     players=[]
+    var a=0;
+    var b=0
 
     function updatecats(arr) {
         for (i = 0; i < player_num; i++) {
@@ -90,8 +92,17 @@ function updateenemy(arr){
             if(parts[0]=="host"){
                 Persongenerator(parts[1],parseFloat(parts[2]),parseFloat(parts[3]),parseFloat(parts[4]),parseFloat(parts[5]),parseFloat(parts[6]))
             }
-
-
+            if(parts[0]=="sc"){
+                if(parts[1][0]=="A"){
+                    a+=1
+                }
+                if(parts[1][0]=="B"){
+                    b+=1
+                }
+            }
+            if(parts[0]=="time"){
+                settime(parts[1].slice(0,-1))
+            }
         }
     };
 
@@ -281,6 +292,7 @@ var playing =true
                     this.isIn = true
                     this.scoreline = score_b
                     if(this.owner.isu){
+
                         ws.send(["sc",this.owner.team].join(" "));
                     }
                 }
@@ -307,8 +319,12 @@ var playing =true
                 } else {
                     if (this.attracted) {
                         //魅了されたらスタンプの絵に並ぶ
-                        this.person.x = this.line<0?this.owner.stamps[5].x:this.owner.stamps[this.line * 2].x;//-1対策
-                        this.person.y = this.line<0?this.owner.stamps[5].y:this.owner.stamps[this.line * 2].y;
+                        try {
+                            this.person.x = this.line<0?this.owner.stamps[5].x:this.owner.stamps[this.line * 2].x;//-1対策
+                            this.person.y = this.line<0?this.owner.stamps[5].y:this.owner.stamps[this.line * 2].y;
+                        } catch(error) {
+                            console.log("エラー内容："　+ error);
+                        }
                     } else {
                         //それ以外は普通に歩く
                         this.person.x += this.vx * delta;
@@ -657,23 +673,27 @@ var playing =true
                     let kittle = new cat(80, 150, 'A', a_name, a_id)
                     var score_a = 0
                     var score_b = 0
-                    var a=0;
-                    var b=0
                     var stamploc = []
                     var wsonopen = false
                     ws.onopen = function (event) {
                         wsonopen = true;
+
                     }
 
                     for (var i = 0; i < player_num; i++) {
                         players.push(new player(80, 150, t, b_name, b_id))
                     }
+                    t=60
                     var sumdelta = 0
                     app.ticker.add((delta) => {
                         if (wsonopen) {
                             if (ishost == "yes" && sumdelta > 60) {
                                 ws.send(["host"].join(" "))
                                 sumdelta = 0
+                                t=t-1
+                                if(!(t<0)){
+                                ws.send(["time",t].join(" "))
+                                }
                             }
                             sumdelta += delta
 

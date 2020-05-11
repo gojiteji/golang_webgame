@@ -59,11 +59,9 @@ func main() {
 	//title
 	router.GET("/", func(ctx *gin.Context){
 		ctx.HTML(200, "index.html", gin.H{"page":0})
-
-
 	})
 
-	router.GET("/ws", func(ctx *gin.Context) {
+	router.GET("/ws/:id", func(ctx *gin.Context) {
 		mrouter.HandleRequest(ctx.Writer, ctx.Request)
 	})
 
@@ -76,6 +74,13 @@ func main() {
 		if(params[0]=="host"){
 			mrouter.Broadcast([]byte(fmt.Sprintf("%s", enemygenerator())))
 		}
+		if(params[0]=="sc"){
+				mrouter.Broadcast([]byte(fmt.Sprintf("%s", params)))
+		}
+		if(params[0]=="time"){
+			mrouter.Broadcast([]byte(fmt.Sprintf("%s", params)))
+		}
+
 	})
 
 	router.Run()
