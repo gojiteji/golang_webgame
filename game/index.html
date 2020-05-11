@@ -5,6 +5,98 @@
 <body>
 <div id="pixiview"></div>
 <script>
+
+    var url = "ws://" + "localhost:8080" + "/ws";
+    ws = new WebSocket(url);
+
+
+    player_num=1
+    players=[]
+
+    function updatecats(arr) {
+        for (i = 0; i < player_num; i++) {
+            if (players[i].id == arr[0]) {
+                animate = false
+                if (Math.abs(players[i].lastswitchedx - parseFloat(arr[2])) > 3 || Math.abs(players[i].lastswitchedy - parseFloat(arr[3])) > 1.5) {
+                    players[i].switchingfoot()
+                    if (Math.abs(players[i].lastswitchedx - parseFloat(arr[2])) > Math.abs(players[i].lastswitchedy - parseFloat(arr[3]))) {
+                        if ((players[i].lastswitchedx - parseFloat(arr[2])) > 0) {
+                            players[i].sx = -1
+                            players[i].sy = 0
+                        } else if ((players[i].lastswitchedx - parseFloat(arr[2])) < 0) {
+                            players[i].sx = 1
+                            players[i].sy = 0
+                        }
+                    } else {
+                        if ((players[i].lastswitchedy - parseFloat(arr[3])) > 0) {
+                            players[i].sx = 0
+                            players[i].sy = -1
+                        } else if ((players[i].lastswitchedy - parseFloat(arr[3])) < 0) {
+                            players[i].sx = 0
+                            players[i].sy = 1
+                        }
+                    }
+                    players[i].update()
+                }
+            }
+            if (players[i].sprite.x - parseFloat(arr[2]) > 0) {
+                players[i].left()
+            } else if (players[i].sprite.x - parseFloat(arr[2]) < 0) {
+                players[i].right()
+            } else {
+                arr[5] == "A" ? players[i].right() : players[i].left()
+            }
+            players[i].sprite.x = parseFloat(arr[2])
+            players[i].sprite.y = parseFloat(arr[3])
+            players[i].name = arr[1]
+            players[i].holdings = arr[4]
+            players[i].holdings = arr[4]
+            players[i].text.x = players[i].sprite.x - 10;
+            players[i].text.y = players[i].sprite.y - 25;
+            app.stage.addChild(players[i].sprite);
+            app.stage.addChild(players[i].sprite);
+            app.stage.addChild(players[i].text);
+            app.stage.addChild(players[i].text);
+
+        }
+        }
+function updateenemy(arr){
+    for(i=0;i<player_num;i++){
+        if(players[i].id==arr[1][0][0]){
+            players[i].holdings = parseInt(players[i].holdings) + 1
+            for(j=0;j<personlist.length;j++) {
+                if(personlist[j].id==arr[0]) {
+                    personlist[j].line = players[i].holdings
+                    personlist[j].owner = players[i]
+                    personlist[j].attracted = true
+                }
+            }
+        }
+    }
+
+    }
+    //受信時の動作定義
+    ws.onmessage = function (msg) {
+        var message,id,name,x,y,holdings=""
+        var cmds = {"message":message,"id": id, "name": name, "x": x,"y":y, "holdings":holdings};
+        if (msg.data) {
+            var parts = msg.data.slice(1,).split(" ")
+            if(parts[0]=="locationupdate"){
+                    updatecats(parts.slice(1, ))
+            }
+            if(parts[0]=="getenemy"){
+                updateenemy(parts.slice(1, ))
+            }
+            if(parts[0]=="host"){
+                Persongenerator(parts[1],parseFloat(parts[2]),parseFloat(parts[3]),parseFloat(parts[4]),parseFloat(parts[5]),parseFloat(parts[6]))
+            }
+
+
+        }
+    };
+
+
+
     const app = new PIXI.Application({
         width: 400, height: 300, backgroundColor: 0x2f4f4f, resolution: window.devicePixelRatio || 1,
     });
@@ -131,12 +223,12 @@ var playing =true
 
     personlist=[]
     class  Passenger{
-        constructor(x,y,vx,vy) {
+        constructor(id,x,y,pvx,pvy) {
 
             this.x = x;
             this.y = y;
-            this.vx = vx;
-            this.vy = vy;
+            this.vx = pvx;
+            this.vy = pvy;
             this.x_0=x
             this.y_0=y
 
@@ -160,262 +252,420 @@ var playing =true
             this.sumdelta=0
             this.isIn=false
             this.scoreline=0
+            this.id=id
 
         }
         show(){
             app.stage.addChild(this.person);
         }
-        update(delta){
-            if(this.person.x<0||this.person.x>400||this.person.y<0||this.person.y>300){
+        update(delta) {
+            if (this.person.x < 0 || this.person.x > 400 || this.person.y < 0 || this.person.y > 300) {
                 app.stage.removeChild(this.person);
             }
-            if(this.attracted){
-                this.sumdelta+=delta
-                if(this.sumdelta>20) {
-                    if((!this.isIn)&&((Math.pow(60-this.person.x,2)+Math.pow(150-this.person.y,2))<2500)){
-                        this.owner.holdings-=1
-                        score_a+=1
-                        this.isIn=true
-                        this.scoreline=score_a
-                    }else {
-                        this.switch = !this.switch
-                        this.x_0 = this.person.x
-                        this.y_0 = this.person.y
-                        this.person.texture = this.switch ? this.t2 : this.t3
-                        this.sumdelta = 0
+            if (this.attracted) {
+                this.sumdelta += delta
+                    //円外から円内に入った時
+                    if ((!this.isIn) && ((Math.pow(60 - this.person.x, 2) + Math.pow(150 - this.person.y, 2)) < 2500)) {
+                        this.owner.holdings -= 1
+                        score_a += 1
+                        this.isIn = true
+                        this.scoreline = score_a
                     }
+                if (this.sumdelta > 20) {
+                    this.switch = !this.switch
+                    this.x_0 = this.person.x
+                    this.y_0 = this.person.y
+                    this.person.texture = this.switch ? this.t2 : this.t3
+                    this.sumdelta = 0
                 }
 
-            }else{
-                if(Math.abs(this.x_0-this.person.x)>5  ||  Math.abs(this.y_0-this.person.y)>5) {
-                    this.switch=!this.switch
-                    this.x_0=this.person.x
-                    this.y_0=this.person.y
+                }else {//魅了されていないときの動作
+                if ((Math.abs(this.x_0 - this.person.x) > 5 || Math.abs(this.y_0 - this.person.y) > 5)&&(this.sumdelta > 20)) {
+                    this.switch = !this.switch
+                    this.x_0 = this.person.x
+                    this.y_0 = this.person.y
                     this.person.texture = this.switch ? this.t0 : this.t1
+                    this.sumdelta = 0
                 }
-            }if(this.isIn){
-                this.person.x=10+this.scoreline*3
-                this.person.y=150
-            }else{
-            if(this.attracted){
-                this.person.x=this.owner.stamps[this.line*2].x;
-                this.person.y=this.owner.stamps[this.line*2].y;
-            }else{
-                this.person.x+=this.vx*delta;
-                this.person.y+=this.vy*delta;
             }
+                if (this.isIn) {
+                    //自陣での並び方
+                    this.person.x = 10 + this.scoreline * 3
+                    this.person.y = 150
+                } else {
+                    if (this.attracted) {
+                        //魅了されたらスタンプの絵に並ぶ
+                        this.person.x = this.owner.stamps[this.line * 2].x;
+                        this.person.y = this.owner.stamps[this.line * 2].y;
+                    } else {
+                        //それ以外は普通に歩く
+                        this.person.x += this.vx * delta;
+                        this.person.y += this.vy * delta;
+                    }
+
             }
         }
     }
-    function stampchecker(k,p){
-        if(k.holdings<5) {
-            for (i = 0; i < p.length; i++) {
-                if (p[i].attracted == false) {
-                    for (j = 0; j < k.stamps.length; j++) {
-                        if (Math.abs(k.stamps[j].x - p[i].person.x) < 10 && (Math.abs(k.stamps[j].y - p[i].person.y) < 20)) {
-                            k.holdings = k.holdings + 1
-                            p[i].line = k.holdings
-                            p[i].owner = k
-                            p[i].attracted = true
-                            break
+                    function stampchecker(k, p) {
+                        if (k.holdings < 5) {
+                            for (var i = 0; i < p.length; i++) {
+                                if (p[i].attracted == false) {
+                                    for (var j = 0; j < k.stamps.length; j++) {
+                                        if (Math.abs(k.stamps[j].x - p[i].person.x) < 10 && (Math.abs(k.stamps[j].y - p[i].person.y) < 20)&&k.holdings<4) {
+                                            k.holdings = k.holdings + 1
+                                            p[i].line = k.holdings
+                                            p[i].owner = k
+                                            p[i].attracted = true
+                                            ws.send(["getenemy", p[i].id, p[i].owner.id].join(" "));
+                                            break
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-            }
-        }
-    }
-    function Persongenerator(){
-        if(Math.random()>0.5) {
-            //上から出現
-            x = 100+Math.random()*380
-            y = 0
-            vx=Math.random()-0.5
-            vy=Math.random()
-        }else{
-            //下から出現
-            x = Math.random()*380
-            y = 285
-            vx=Math.random()-0.5
-            vy=-Math.random()
-        }
-        let person = new Passenger(x,y,vx,vy)
-        person.show()
-        personlist.push(person)
-    }
 
-    class cat{
-        constructor(x,y,team,name) {
-            this.score=0
-            this.name=name
-            this.text =  new PIXI.Text(name,
-                {
-                    //   fontFamily: 'Arial',   // フォント
-                    fontSize: 10,
-                    fill : 0xFDBE00,       // 文字色
-                    stroke: 0x000000,      // アウトラインの色
-                    strokeThickness: 2,    // アウトラインの太さ
-                       align: 'center',       // 文字揃え(複数行の場合に有効)
-                });
-            this.max_stamp=13
-            this.stamps=[]
-            this.count_stamp=0
-            this.speedcoeff=0.5
-            this.sx=0
-            this.sy=0
-            this.x_0=0
-            this.y_0=0
-            this.footprint=false
-            this.footwidth=5
-            this.switchfooot=true
-            this.holdings=0
-            this.x = x;
-            this.y = y;
-            this.texture00 = PIXI.Texture.from('./images/'+team+'/'+team+'_0.png');
-            this.texture01 = PIXI.Texture.from('./images/'+team+'/'+team+'_1.png');
-            this.texture10 = PIXI.Texture.from('./images/'+team+'/'+team+'0.png');
-            this.texture11 = PIXI.Texture.from('./images/'+team+'/'+team+'1.png');
-
-            this.sprite = new PIXI.Sprite(this.texture01);
-            this.sprite.width=this.sprite.width/30;
-            this.sprite.height=this.sprite.height/30;
-            this.sprite.anchor.set(0.5,0.5);
-            this.sprite.x = this.x;
-            this.sprite.y = this.y;
-            this.text.x =  this.sprite.x-10;
-            this.text.y =  this.sprite.y-25;
-            this.sprite.interactive = true;
-            app.stage.addChild(this.sprite);
-            app.stage.addChild(this.text);
-
-        }
-        update(delta){
-            this.px=this.sx
-            this.py=this.sy
-            this.dx=Math.abs(app.renderer.plugins.interaction.mouse.global.x-this.sprite.x)
-            this.dy=Math.abs(app.renderer.plugins.interaction.mouse.global.y-this.sprite.y)
-
-            this.sx=speed(app.renderer.plugins.interaction.mouse.global.x,this.sprite.x)
-            this.sy=speed(app.renderer.plugins.interaction.mouse.global.y,this.sprite.y)
-            if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture11){
-                this.sprite.texture=this.texture10
-            }
-
-            if(this.sprite.y<this.sprite.height*0.8&&this.sy<0){
-                this.sy=0
-            }
-            if(this.sprite.y>285&&this.sy>0){
-                this.sy=0
-            }
-            if(this.sprite.x<this.sprite.width*0.6&&this.sx<0){
-                this.sx=0
-            }
-            if(this.sprite.x>380&&this.sx>0){
-                this.sx=0
-            }
-
-            if (this.sx<0){
-                this.sprite.texture=this.switchfooot?this.texture00:this.texture01;
-            } else if(this.sx>0){
-                this.sprite.texture=this.switchfooot?this.texture10:this.texture11;
-            }else if (this.sx==0&&(!(this.sy==0) )){
-                this.sprite.texture=this.switchfooot?this.texture10:this.texture11;
-            }
-
-            if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture01){
-                this.sprite.texture=this.texture00
-            }
-            if(this.sy==0&&this.sx==0&&this.sprite.texture==this.texture01){
-                this.sprite.texture=this.texture00
-            }
-            this.sprite.x += this.sx*this.speedcoeff*delta;
-            this.sprite.y +=this. sy*this.speedcoeff*delta;
-            this.text.x =  this.sprite.x-10;
-            this.text.y =  this.sprite.y-25;
-            if(this.footprint) {
-                if (Math.pow(Math.abs(this.sprite.x) - Math.abs(this.x_0), 2) + Math.pow(Math.abs(this.sprite.y) - Math.abs(this.y_0), 2) > this.footwidth*this.footwidth) {
-                    this.count_stamp=this.count_stamp+1
-                    switch (Math.abs(this.sx)>Math.abs(this.sy)){
-                        case true:
-                            if(this.sx>0){
-
-                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_r.png'));
-                            }else{
-                               this. a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_l.png'));
-                            }
-                            break;
-                        case false:
-                            if(this.sy>0){
-                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_d.png'));
-                            }else{
-                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_u.png'));
-                            }
-                            break;
+                    function Persongenerator(pid, x, y, vx, vy) {
+                        let person = new Passenger(pid, x, y, vx, vy)
+                        person.show()
+                        personlist.push(person)
                     }
 
-                    this.a_stmap_sprite.width = this.sprite.width / 5;
-                    this. a_stmap_sprite.height = this.sprite.height / 5;
+                    class player {
+                        constructor(x, y, team, id, name) {
+                            this.score = 0
+                            this.name = name
+                            this.text = new PIXI.Text(name,
+                                {
+                                    //   fontFamily: 'Arial',   // フォント
+                                    fontSize: 10,
+                                    fill: 0xFDBE00,       // 文字色
+                                    //stroke: 0x000000,      // アウトラインの色
+                                    //strokeThickness: 2,    // アウトラインの太さ
+                                    align: 'center',       // 文字揃え(複数行の場合に有効)
+                                });
+                            this.max_stamp = 13
+                            this.stamps = []
+                            this.count_stamp = 0
+                            this.speedcoeff = 0.5
+                            this.switchfooot = false
+                            this.sx = 0
+                            this.sy = 0
+                            this.x_0 = 0
+                            this.y_0 = 0
+                            this.footprint = false
+                            this.footwidth = 5
+                            this.holdings = 0
+                            this.x = x;
+                            this.y = y;
+                            this.id = id
+                            this.team = team
+                            this.texture00 = PIXI.Texture.from('./images/' + team + '/' + team + '_0.png');
+                            this.texture01 = PIXI.Texture.from('./images/' + team + '/' + team + '_1.png');
+                            this.texture10 = PIXI.Texture.from('./images/' + team + '/' + team + '0.png');
+                            this.texture11 = PIXI.Texture.from('./images/' + team + '/' + team + '1.png');
 
-                    this.a_stmap_sprite.anchor.set(Math.random()*this.switchfooot, -Math.random()*this.switchfooot);
-                    this.a_stmap_sprite.x = this.sprite.x;
-                    this.a_stmap_sprite.y = this.sprite.y;
-                    app.stage.addChild(this.a_stmap_sprite);
-                    this.a_stmap_sprite.anchor.set(Math.random()*!this.switchfooot, -Math.random()*!this.switchfooot);
-                    this.a_stmap_sprite.x = this.sprite.x;
-                    this.a_stmap_sprite.y = this.sprite.y+5;
-                    app.stage.addChild(this.a_stmap_sprite);
-                    app.stage.removeChild(this.sprite);
-                    app.stage.addChild(this.sprite)
-                    app.stage.removeChild(this.text);
-                    app.stage.addChild(this.text)
-                    this.footprint=false
-                    this.x_0=this.sprite.x
-                    this.y_0=this.sprite.y
-                    this.switchfooot=!this.switchfooot
-                    this.stamps.push(this.a_stmap_sprite)
-                    if(this.count_stamp>=this.max_stamp){
-                        app.stage.removeChild(this.stamps.shift())
+                            this.sprite = new PIXI.Sprite(this.texture00);
+                            this.sprite.width = this.sprite.width / 30;
+                            this.sprite.height = this.sprite.height / 30;
+                            this.sprite.anchor.set(0.5, 0.5);
+                            this.sprite.x = this.x;
+                            this.sprite.y = this.y;
+                            this.text.x = this.sprite.x - 10;
+                            this.text.y = this.sprite.y - 25;
+                            this.sprite.interactive = true;
+                            app.stage.addChild(this.sprite);
+                            app.stage.addChild(this.text);
+                            this.switch = false
+                            this.lastswitchedx = this.x
+                            this.lastswitchedy = this.y
+
+                        }
+
+                        switchingfoot() {
+                            this.switch = !this.switch
+                            this.lastswitchedx = this.sprite.x
+                            this.lastswitchedy = this.sprite.y
+                        }
+
+                        right() {
+                            if (this.switch) {
+                                this.sprite.texture = this.texture10
+                                app.stage.removeChild(this.sprite);
+                                app.stage.addChild(this.sprite);
+                            } else {
+                                this.sprite.texture = this.texture11
+                                app.stage.removeChild(this.sprite);
+                                app.stage.addChild(this.sprite);
+                            }
+                        }
+
+                        left() {
+                            if (this.switch) {
+                                this.sprite.texture = this.texture00
+                                app.stage.removeChild(this.sprite);
+                                app.stage.addChild(this.sprite);
+                            } else {
+                                this.sprite.texture = this.texture01
+                                app.stage.removeChild(this.sprite);
+                                app.stage.addChild(this.sprite);
+                            }
+                        }
+
+                        update() {
+                            if (this.footprint) {
+                                if (Math.pow(Math.abs(this.sprite.x) - Math.abs(this.x_0), 2) + Math.pow(Math.abs(this.sprite.y) - Math.abs(this.y_0), 2) > this.footwidth * this.footwidth) {
+                                    this.count_stamp = this.count_stamp + 1
+                                    if (this.sx > 0) {
+                                        this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/' + this.team + '/' + this.team + '_stamp_r.png'));
+                                    } else if (this.sx < 0) {
+                                        this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/' + this.team + '/' + this.team + '_stamp_l.png'));
+                                    } else if (this.sy > 0) {
+                                        this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/' + this.team + '/' + this.team + '_stamp_d.png'));
+                                    } else if (this.sy < 0) {
+                                        this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/' + this.team + '/' + this.team + '_stamp_u.png'));
+                                    }
+                                    this.a_stmap_sprite.width = this.sprite.width / 5;
+                                    this.a_stmap_sprite.height = this.sprite.height / 5;
+
+                                    this.a_stmap_sprite.anchor.set(Math.random() * this.switchfooot, -Math.random() * this.switchfooot);
+                                    this.a_stmap_sprite.x = this.sprite.x;
+                                    this.a_stmap_sprite.y = this.sprite.y;
+                                    app.stage.addChild(this.a_stmap_sprite);
+                                    this.a_stmap_sprite.anchor.set(Math.random() * !this.switchfooot, -Math.random() * !this.switchfooot);
+                                    this.a_stmap_sprite.x = this.sprite.x;
+                                    this.a_stmap_sprite.y = this.sprite.y + 5;
+                                    app.stage.addChild(this.a_stmap_sprite);
+                                    app.stage.removeChild(this.sprite);
+                                    app.stage.addChild(this.sprite)
+                                    app.stage.removeChild(this.text);
+                                    app.stage.addChild(this.text)
+                                    this.footprint = false
+                                    this.x_0 = this.sprite.x
+                                    this.y_0 = this.sprite.y
+                                    this.switchfooot = !this.switchfooot
+                                    this.stamps.push(this.a_stmap_sprite)
+                                    if (this.count_stamp >= this.max_stamp) {
+                                        app.stage.removeChild(this.stamps.shift())
+                                    }
+                                }
+                            } else {
+                                if (this.sx || this.sy) {
+                                    this.footprint = true
+                                }
+                            }
+                            //足跡距離更新
+                            if (Math.abs(Math.abs(this.sprite.x) - Math.abs(this.x_0)) > this.footwidth) {
+                                this.x_0 = this.sprite.x
+                            }
+                            if (Math.abs(Math.abs(this.sprite.y) - Math.abs(this.y_0) > this.footwidth)) {
+                                this.y_0 = this.sprite.y
+                            }
+                        }
+
                     }
-                }
-            }else{
-                if(this.sx || this.sy){
-                    this.footprint=true
-                }
-            }
-            //足跡距離更新
-            if(Math.abs(Math.abs(this.sprite.x)-Math.abs(this.x_0))>this.footwidth){
-                this.x_0=this.sprite.x
-            }
-            if(Math.abs(Math.abs(this.sprite.y)-Math.abs(this.y_0)>this.footwidth)){
-                this.y_0=this.sprite.y
-            }
-        }
-    }
 
-    // Listen for animate update
-    let kittle = new cat(60,120,'A','you')
-    var score_a=0
-    var score_b=0
+                    class cat {
+                        constructor(x, y, team, id, name) {
+                            this.score = 0
+                            this.name = name
+                            this.text = new PIXI.Text(name,
+                                {
+                                    //   fontFamily: 'Arial',   // フォント
+                                    fontSize: 10,
+                                    fill: 0xFDBE00,       // 文字色
+                                    stroke: 0x000000,      // アウトラインの色
+                                    strokeThickness: 2,    // アウトラインの太さ
+                                    align: 'center',       // 文字揃え(複数行の場合に有効)
+                                });
+                            this.max_stamp = 13
+                            this.stamps = []
+                            this.count_stamp = 0
+                            this.speedcoeff = 0.5
+                            this.sx = 0
+                            this.sy = 0
+                            this.x_0 = 0
+                            this.y_0 = 0
+                            this.footprint = false
+                            this.footwidth = 5
+                            this.switchfooot = true
+                            this.holdings = 0
+                            this.x = x;
+                            this.y = y;
+                            this.id = id
+                            this.team = team
+                            this.texture00 = PIXI.Texture.from('./images/' + team + '/' + team + '_0.png');
+                            this.texture01 = PIXI.Texture.from('./images/' + team + '/' + team + '_1.png');
+                            this.texture10 = PIXI.Texture.from('./images/' + team + '/' + team + '0.png');
+                            this.texture11 = PIXI.Texture.from('./images/' + team + '/' + team + '1.png');
 
-    var stamploc=[]
+                            this.sprite = new PIXI.Sprite(this.texture01);
+                            this.sprite.width = this.sprite.width / 30;
+                            this.sprite.height = this.sprite.height / 30;
+                            this.sprite.anchor.set(0.5, 0.5);
+                            this.sprite.x = this.x;
+                            this.sprite.y = this.y;
+                            this.text.x = this.sprite.x - 10;
+                            this.text.y = this.sprite.y - 25;
+                            this.sprite.interactive = true;
+                            app.stage.addChild(this.sprite);
+                            app.stage.addChild(this.text);
 
-    app.ticker.add((delta) => {
+                        }
 
-        if(playing) {
-            for (j = 0; j < personlist.length; j++) {
-                personlist[j].update(delta)
-            }
+                        update(delta) {
+                            this.px = this.sx
+                            this.py = this.sy
+                            this.dx = Math.abs(app.renderer.plugins.interaction.mouse.global.x - this.sprite.x)
+                            this.dy = Math.abs(app.renderer.plugins.interaction.mouse.global.y - this.sprite.y)
 
-            kittle.update(delta)
-            stampchecker(kittle, personlist)
-            ScoreA.text = "catched:" + score_a.toString()
-            ScoreB.text = "catched:" + score_b.toString()
-            app.stage.removeChild(ScoreA)
-            app.stage.removeChild(ScoreB)
-            app.stage.addChild(ScoreA);
-            app.stage.addChild(ScoreB);
-        }
+                            this.sx = speed(app.renderer.plugins.interaction.mouse.global.x, this.sprite.x)
+                            this.sy = speed(app.renderer.plugins.interaction.mouse.global.y, this.sprite.y)
+                            if (this.sy == 0 && this.sx == 0 && this.sprite.texture == this.texture11) {
+                                this.sprite.texture = this.texture10
+                            }
 
-    });
+                            if (this.sprite.y < this.sprite.height * 0.8 && this.sy < 0) {
+                                this.sy = 0
+                            }
+                            if (this.sprite.y > 285 && this.sy > 0) {
+                                this.sy = 0
+                            }
+                            if (this.sprite.x < this.sprite.width * 0.6 && this.sx < 0) {
+                                this.sx = 0
+                            }
+                            if (this.sprite.x > 380 && this.sx > 0) {
+                                this.sx = 0
+                            }
+
+                            if (this.sx < 0) {
+                                this.sprite.texture = this.switchfooot ? this.texture00 : this.texture01;
+                            } else if (this.sx > 0) {
+                                this.sprite.texture = this.switchfooot ? this.texture10 : this.texture11;
+                            } else if (this.sx == 0 && (!(this.sy == 0))) {
+                                this.sprite.texture = this.switchfooot ? this.texture10 : this.texture11;
+                            }
+
+                            if (this.sy == 0 && this.sx == 0 && this.sprite.texture == this.texture01) {
+                                this.sprite.texture = this.texture00
+                            }
+                            if (this.sy == 0 && this.sx == 0 && this.sprite.texture == this.texture01) {
+                                this.sprite.texture = this.texture00
+                            }
+                            if (!(this.sx == 0 && this.sy == 0)) {
+                                ws.send(["locationupdate", this.id, this.name, this.sprite.x, this.sprite.y, this.holdings, this.team].join(" "));
+                            }
+                            this.sprite.x += this.sx * this.speedcoeff * delta;
+                            this.sprite.y += this.sy * this.speedcoeff * delta;
+                            this.text.x = this.sprite.x - 10;
+                            this.text.y = this.sprite.y - 25;
+                            if (this.footprint) {
+                                if (Math.pow(Math.abs(this.sprite.x) - Math.abs(this.x_0), 2) + Math.pow(Math.abs(this.sprite.y) - Math.abs(this.y_0), 2) > this.footwidth * this.footwidth) {
+                                    this.count_stamp = this.count_stamp + 1
+                                    switch (Math.abs(this.sx) > Math.abs(this.sy)) {
+                                        case true:
+                                            if (this.sx > 0) {
+
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_r.png'));
+                                            } else {
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_l.png'));
+                                            }
+                                            break;
+                                        case false:
+                                            if (this.sy > 0) {
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_d.png'));
+                                            } else {
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_u.png'));
+                                            }
+                                            break;
+                                    }
+
+                                    this.a_stmap_sprite.width = this.sprite.width / 5;
+                                    this.a_stmap_sprite.height = this.sprite.height / 5;
+
+                                    this.a_stmap_sprite.anchor.set(Math.random() * this.switchfooot, -Math.random() * this.switchfooot);
+                                    this.a_stmap_sprite.x = this.sprite.x;
+                                    this.a_stmap_sprite.y = this.sprite.y;
+                                    app.stage.addChild(this.a_stmap_sprite);
+                                    this.a_stmap_sprite.anchor.set(Math.random() * !this.switchfooot, -Math.random() * !this.switchfooot);
+                                    this.a_stmap_sprite.x = this.sprite.x;
+                                    this.a_stmap_sprite.y = this.sprite.y + 5;
+                                    app.stage.addChild(this.a_stmap_sprite);
+                                    app.stage.removeChild(this.sprite);
+                                    app.stage.addChild(this.sprite)
+                                    app.stage.removeChild(this.text);
+                                    app.stage.addChild(this.text)
+                                    this.footprint = false
+                                    this.x_0 = this.sprite.x
+                                    this.y_0 = this.sprite.y
+                                    this.switchfooot = !this.switchfooot
+                                    this.stamps.push(this.a_stmap_sprite)
+                                    if (this.count_stamp >= this.max_stamp) {
+                                        app.stage.removeChild(this.stamps.shift())
+                                    }
+                                }
+                            } else {
+                                if (this.sx || this.sy) {
+                                    this.footprint = true
+                                }
+                            }
+                            //足跡距離更新
+                            if (Math.abs(Math.abs(this.sprite.x) - Math.abs(this.x_0)) > this.footwidth) {
+                                this.x_0 = this.sprite.x
+                            }
+                            if (Math.abs(Math.abs(this.sprite.y) - Math.abs(this.y_0) > this.footwidth)) {
+                                this.y_0 = this.sprite.y
+                            }
+                        }
+                    }
+
+                    var a_name = window.prompt("a name", "");
+                    var a_id = a_name
+
+                    var b_name = window.prompt("b name", "");
+                    var b_id = b_name
+                    var t = window.prompt("team", "");
+                    var ishost = window.prompt("host", "");
+
+                    // Listen for animate update
+                    let kittle = new cat(80, 150, 'A', a_name, a_id)
+                    var score_a = 0
+                    var score_b = 0
+
+                    var stamploc = []
+                    var wsonopen = false
+                    ws.onopen = function (event) {
+                        wsonopen = true;
+                    }
+
+                    for (var i = 0; i < player_num; i++) {
+                        players.push(new player(80, 150, t, b_name, b_id))
+                    }
+                    var sumdelta = 0
+                    app.ticker.add((delta) => {
+                        if (wsonopen) {
+                            if (ishost == "yes" && sumdelta > 60) {
+                                ws.send(["host"].join(" "))
+                                sumdelta = 0
+                            }
+                            sumdelta += delta
+
+                            if (playing) {
+                                for (var j = 0; j < personlist.length; j++) {
+                                    personlist[j].update(delta)
+                                }
+
+                                kittle.update(delta)
+                                stampchecker(kittle, personlist)
+                                ScoreA.text = "catched:" + score_a.toString()
+                                ScoreB.text = "catched:" + score_b.toString()
+                                app.stage.removeChild(ScoreA)
+                                app.stage.removeChild(ScoreB)
+                                app.stage.addChild(ScoreA);
+                                app.stage.addChild(ScoreB);
+                            }
+                        }
+                    });
 
 </script>
 </body>
