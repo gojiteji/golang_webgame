@@ -253,6 +253,7 @@ var playing =true
             this.isIn=false
             this.scoreline=0
             this.id=id
+            this.switchcounter=0
 
         }
         show(){
@@ -265,12 +266,24 @@ var playing =true
             if (this.attracted) {
                 this.sumdelta += delta
                     //円外から円内に入った時
-                    if ((!this.isIn) && ((Math.pow(60 - this.person.x, 2) + Math.pow(150 - this.person.y, 2)) < 2500)) {
+                    if ((!this.isIn) && ((Math.pow(60 - this.person.x, 2) + Math.pow(150 - this.person.y, 2)) < 2500)&&this.owner.team=="A") {
                         this.owner.holdings -= 1
                         score_a += 1
                         this.isIn = true
                         this.scoreline = score_a
+                        if(this.owner.isu){
+                            ws.send(["sc",this.owner.team].join(" "));
+                        }
                     }
+                if ((!this.isIn) && ((Math.pow(340 - this.person.x, 2) + Math.pow(150 - this.person.y, 2)) < 2500)&&this.owner.team=="B") {
+                    this.owner.holdings -= 1
+                    score_b += 1
+                    this.isIn = true
+                    this.scoreline = score_b
+                    if(this.owner.isu){
+                        ws.send(["sc",this.owner.team].join(" "));
+                    }
+                }
                 if (this.sumdelta > 20) {
                     this.switch = !this.switch
                     this.x_0 = this.person.x
@@ -294,8 +307,8 @@ var playing =true
                 } else {
                     if (this.attracted) {
                         //魅了されたらスタンプの絵に並ぶ
-                        this.person.x = this.owner.stamps[this.line * 2].x<0?this.owner.stamps[5].x:this.owner.stamps[this.line * 2].x;//-1対策
-                        this.person.y = this.owner.stamps[this.line * 2].y<0?this.owner.stamps[5].y:this.owner.stamps[this.line * 2].y;
+                        this.person.x = this.line<0?this.owner.stamps[5].x:this.owner.stamps[this.line * 2].x;//-1対策
+                        this.person.y = this.line<0?this.owner.stamps[5].y:this.owner.stamps[this.line * 2].y;
                     } else {
                         //それ以外は普通に歩く
                         this.person.x += this.vx * delta;
@@ -334,6 +347,7 @@ var playing =true
                         constructor(x, y, team, id, name) {
                             this.score = 0
                             this.name = name
+                            this.isu=false
                             this.text = new PIXI.Text(name,
                                 {
                                     //   fontFamily: 'Arial',   // フォント
@@ -379,6 +393,7 @@ var playing =true
                             this.lastswitchedx = this.x
                             this.lastswitchedy = this.y
 
+                            this.switchcounter=0
                         }
 
                         switchingfoot() {
@@ -388,30 +403,41 @@ var playing =true
                         }
 
                         right() {
-                            if (this.switch) {
-                                this.sprite.texture = this.texture10
-                                app.stage.removeChild(this.sprite);
-                                app.stage.addChild(this.sprite);
-                            } else {
-                                this.sprite.texture = this.texture11
-                                app.stage.removeChild(this.sprite);
-                                app.stage.addChild(this.sprite);
+                            this.switchcounter+=1
+                            if(this.switchcounter>5){
+                                this.switchcounter=0
+                                if (this.switch) {
+                                    this.sprite.texture = this.texture10
+                                    app.stage.removeChild(this.sprite);
+                                    app.stage.addChild(this.sprite);
+                                } else {
+                                    this.sprite.texture = this.texture11
+                                    app.stage.removeChild(this.sprite);
+                                    app.stage.addChild(this.sprite);
+                                }
                             }
                         }
 
                         left() {
-                            if (this.switch) {
-                                this.sprite.texture = this.texture00
-                                app.stage.removeChild(this.sprite);
-                                app.stage.addChild(this.sprite);
-                            } else {
-                                this.sprite.texture = this.texture01
-                                app.stage.removeChild(this.sprite);
-                                app.stage.addChild(this.sprite);
+                            this.switchcounter+=1
+                            if(this.switchcounter>5) {
+                                this.switchcounter = 0
+
+                                if (this.switch) {
+                                    this.sprite.texture = this.texture00
+                                    app.stage.removeChild(this.sprite);
+                                    app.stage.addChild(this.sprite);
+                                } else {
+                                    this.sprite.texture = this.texture01
+                                    app.stage.removeChild(this.sprite);
+                                    app.stage.addChild(this.sprite);
+                                }
                             }
                         }
 
                         update() {
+                            this.switchcounter+=1
+
                             if (this.footprint) {
                                 if (Math.pow(Math.abs(this.sprite.x) - Math.abs(this.x_0), 2) + Math.pow(Math.abs(this.sprite.y) - Math.abs(this.y_0), 2) > this.footwidth * this.footwidth) {
                                     this.count_stamp = this.count_stamp + 1
@@ -468,6 +494,7 @@ var playing =true
                         constructor(x, y, team, id, name) {
                             this.score = 0
                             this.name = name
+                            this.isu=true
                             this.text = new PIXI.Text(name,
                                 {
                                     //   fontFamily: 'Arial',   // フォント
@@ -630,7 +657,8 @@ var playing =true
                     let kittle = new cat(80, 150, 'A', a_name, a_id)
                     var score_a = 0
                     var score_b = 0
-
+                    var a=0;
+                    var b=0
                     var stamploc = []
                     var wsonopen = false
                     ws.onopen = function (event) {
@@ -656,8 +684,8 @@ var playing =true
 
                                 kittle.update(delta)
                                 stampchecker(kittle, personlist)
-                                ScoreA.text = "catched:" + score_a.toString()
-                                ScoreB.text = "catched:" + score_b.toString()
+                                ScoreA.text = "catched:" + a.toString()
+                                ScoreB.text = "catched:" + b.toString()
                                 app.stage.removeChild(ScoreA)
                                 app.stage.removeChild(ScoreB)
                                 app.stage.addChild(ScoreA);
