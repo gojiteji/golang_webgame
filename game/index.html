@@ -280,12 +280,11 @@ var playing =true
                 }
 
                 }else {//魅了されていないときの動作
-                if ((Math.abs(this.x_0 - this.person.x) > 5 || Math.abs(this.y_0 - this.person.y) > 5)&&(this.sumdelta > 20)) {
+                if ((Math.abs(this.x_0 - this.person.x) > 5 || Math.abs(this.y_0 - this.person.y) > 5)) {
                     this.switch = !this.switch
                     this.x_0 = this.person.x
                     this.y_0 = this.person.y
                     this.person.texture = this.switch ? this.t0 : this.t1
-                    this.sumdelta = 0
                 }
             }
                 if (this.isIn) {
@@ -295,8 +294,8 @@ var playing =true
                 } else {
                     if (this.attracted) {
                         //魅了されたらスタンプの絵に並ぶ
-                        this.person.x = this.owner.stamps[this.line * 2].x;
-                        this.person.y = this.owner.stamps[this.line * 2].y;
+                        this.person.x = this.owner.stamps[this.line * 2].x<0?this.owner.stamps[5].x:this.owner.stamps[this.line * 2].x;//-1対策
+                        this.person.y = this.owner.stamps[this.line * 2].y<0?this.owner.stamps[5].y:this.owner.stamps[this.line * 2].y;
                     } else {
                         //それ以外は普通に歩く
                         this.person.x += this.vx * delta;
