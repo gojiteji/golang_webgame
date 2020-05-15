@@ -2,9 +2,148 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.2.4/pixi.min.js"></script></head>
-<body>
-<div id="pixiview"></div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.js"></script>
+</head>
 <script>
+
+    {{if eq .page 0}}
+
+
+    function hideid(){
+        document.getElementById('iddiv').innerHTML="<div class=\"ui center big  input\" id=\"roomholder\"><input id=\"number\" type=\"text\" required minlength=\"1\" maxlength=\"10\"   placeholder=\"room id\" name=\"room\" required></div></div>"
+    }
+
+    function showid() {
+        roomid = ('000000' + Math.floor(Math.random() * 1000000)).slice(-6)
+        document.getElementById('iddiv').innerHTML = "<div class=\"ui labeled input\"><div class=\"ui label\"  name=\"\" value=\"\"><input type=\"hidden\" id=\"id\"name=\"room\" value=\"\">roomid<div class=\"ui green message\">" + roomid + "</div></div></div>"
+        document.getElementById("id").value = roomid
+    }
+
+    function joinid() {
+        if (document.getElementById("join").checked) {
+            var url = "ws://" + "localhost:8080/ws/" + document.getElementById("number").value;
+            ws = new WebSocket(url);
+            ws.onopen = function (event) {
+                ws.send(["newuser",document.getElementById("name").value].join(" "));
+            }
+            }
+        }
+    {{end}}
+</script>
+<body>
+<br><br><br><br><br><br><br><br>
+
+{{if eq .page 0}}
+    <center>
+            <h1>ひとあつめ</h1>
+
+    <form action="http://localhost:8080/" method="post">
+            <input type="radio" name="host"  id="join" checked="checked"value="1"onclick="hideid()">
+            <label >Join a room　　　　</label>
+        <input type="radio" name="host" id="create" value="2"  onclick="showid()">
+        <label>Create a room</label><br><br>
+        {{if eq .error 5}}
+        <br>
+        <div class="ui pointing below red basic label">
+            room idが見つかりません!
+        </div><br>
+        {{end}}
+        <div id="iddiv">
+            <div class="ui center big  input" id="roomholder"><input id="number" type="text" required minlength="1" maxlength="10"  value="" placeholder="room id" name="room" pattern=".*\S+.*" required></div></div>
+        <br><br><div class="ui center big  input" id="nameholder"><input type="text" required minlength="1" maxlength="10"  id="name" value="" placeholder="なまえ" name="name" pattern=".*\S+.*" required></div>
+        <br>
+            <br>
+        <br>
+
+        <br>
+        <br>
+
+        <button class="ui primary button"onclick="joinid()">Join</button>
+    </form>
+        </center>
+        {{else if eq .page 1}}
+{{ if eq .ishost "1"}}
+
+    <div class="ui list">
+        <div class="item">
+            <img class="ui avatar image" src="http://localhost:8080/images/A/A0.png">
+            <div class="content">
+                <div class="description" >{{.name}}</div>
+            </div>
+        </div>
+    </div>
+    {{ else if eq .ishost "0"}}
+    <div class="ui list">
+        <div class="item">
+            <img class="ui avatar image" src="http://localhost:8080/images/A/A0.png">
+            <div class="content">
+                <div class="description" id="hostuser" ></div>
+            </div>
+        </div>
+    </div>
+    <div class="ui list">
+        <div class="item">
+            <img class="ui avatar image" src="http://localhost:8080/images/B/B0.png">
+            <div class="content">
+                <div class="description">{{.name}}</div>
+            </div>
+        </div>
+    </div>
+        {{end}}
+
+    <div id="user"></div>
+        {{else if eq .page 2}}
+<div id="pixiview"></div>
+{{end}}
+<script>
+    {{ if eq .page 1}}
+
+    {{ if eq .ishost "1"}}
+    var url = "ws://" + "localhost:8080/ws/" + {{.roomid}};
+    ws = new WebSocket(url);
+    user=true
+    ws.onmessage = function (msg) {
+        if (msg.data) {
+            var parts = msg.data.slice(1,).split(" ")
+
+            if(user) {
+
+                if (parts[0] == "newuser") {
+                    document.getElementById('user').innerHTML = "<div class=\"ui list\">\n<div class=\"item\"><img class=\"ui avatar image\" src=\"http://localhost:8080/images/B/B1.png\"><div class=\"content\"><div class=\"description\">" + parts[1].slice(0, -1) + "</div></div></div></div>"
+                    user = false
+                }
+            }
+            if(parts[0]=="roomislive"){
+                ws.send(["roomislive","yes"].join(" "));
+            }
+            if(parts[0].slice(0,-1)=="gethostname"){
+                ws.send(["hostname",{{.name}}].join(" "))
+            }
+
+        }
+    }
+
+    {{else if eq .ishost "0"}}
+    var url = "ws://" + "localhost:8080/ws/" + {{.roomid}};
+    ws = new WebSocket(url);
+
+    ws.onopen = function (event) {
+        ws.send(["gethostname"].join(" "))
+    }
+        ws.onmessage = function (msg) {
+        if (msg.data) {
+            var parts = msg.data.slice(1,).split(" ")
+            if(parts[0]=="hostname") {
+                document.getElementById('hostuser').innerHTML = parts[1].slice(0,-1)
+            }
+        }
+    }
+    {{end}}
+    {{end}}
+
+    {{ if eq .page 2}}
 
     var url = "ws://" + "localhost:8080" + "/ws/a";
     ws = new WebSocket(url);
@@ -662,15 +801,16 @@ var playing =true
                     }
 
                     var a_name = window.prompt("a name", "");
-                    var a_id = a_name
+                    var a_id = window.prompt("a id", "");
+                    var ta = window.prompt("a  team", "");
 
                     var b_name = window.prompt("b name", "");
-                    var b_id = b_name
-                    var t = window.prompt("team", "");
+                    var b_id = window.prompt("b id", "")
+                    var t = window.prompt("b  team", "");
                     var ishost = window.prompt("host", "");
 
                     // Listen for animate update
-                    let kittle = new cat(80, 150, 'A', a_name, a_id)
+                    let kittle = new cat(80, 150, ta, a_name, a_id)
                     var score_a = 0
                     var score_b = 0
                     var stamploc = []
@@ -685,6 +825,9 @@ var playing =true
                     }
                     t=60
                     var sumdelta = 0
+                    while(true){
+
+                    }
                     app.ticker.add((delta) => {
                         if (wsonopen) {
                             if (ishost == "yes" && sumdelta > 60) {
@@ -713,7 +856,7 @@ var playing =true
                             }
                         }
                     });
-
+{{end}}
 </script>
 </body>
 </html>

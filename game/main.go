@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
-	"math/rand"
 	"fmt"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olahol/melody.v1"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -47,6 +49,7 @@ func enemygenerator()  string{
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+
 	router := gin.Default()
 	router.Static("/images", "./images/")
 	config := cors.DefaultConfig()
@@ -56,9 +59,63 @@ func main() {
 	router.LoadHTMLGlob("*.html")
 
 	mrouter := melody.New() //melodyのルーター
+
+	//cookie
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
+
 	//title
+
 	router.GET("/", func(ctx *gin.Context){
-		ctx.HTML(200, "index.html", gin.H{"page":0})
+				ctx.HTML(200, "index.html", gin.H{"page": 0, "error": -1})
+	})
+
+	router.POST("/", func(ctx *gin.Context){
+
+		room:=ctx.PostForm("room")
+		name:=ctx.PostForm("name")
+		host:=ctx.PostForm("host")
+
+		if(room==""||name==""){
+		ctx.HTML(200, "index.html", gin.H{"page": 0, "error": -1})
+		}else {
+			room := ctx.PostForm("room")
+			name := ctx.PostForm("name")
+			if room == "" {
+				ctx.HTML(200, "index.html", gin.H{"page": 0, "error": 1})
+			} else if name == "" {
+				ctx.HTML(200, "index.html", gin.H{"page": 0, "error": 2})
+			} else {
+				if host=="2"{
+					session := sessions.Default(ctx)
+					session.Set("username", name)
+					session.Set("ishost", "1")
+					session.Save()
+					//url/:idに転送
+					ctx.Redirect(302, "/room/"+room)
+				}else if host=="1"{
+					session:= sessions.Default(ctx)
+					session.Set("username", name)
+					session.Set("ishost", "0")
+					session.Save()
+
+					//ルーム確認
+					//ctx.HTML(200, "index.html", gin.H{"page": 0, "error": -5})
+					//ルーム入室
+					ctx.Redirect(302, "/room/"+room)
+					//broadcastでスタート
+					//ctx.HTML(200, "index.html", gin.H{"page": 0,"error":5})
+				}
+			}
+		}
+	})
+
+	router.GET("/room/:id", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		username := session.Get("username")
+		ishost:=session.Get("ishost")
+		id:= ctx.Param("id")
+		ctx.HTML(200, "index.html", gin.H{"page": 1, "error": -1,"name":username,"ishost":ishost,"roomid":id})
 	})
 
 	router.GET("/ws/:id", func(ctx *gin.Context) {
@@ -67,6 +124,13 @@ func main() {
 
 	mrouter.HandleMessage(func(s *melody.Session, msg []byte) {
 		params := strings.Split(string(msg), " ")
+		if(params[0]=="newuser") {
+			mrouter.Broadcast([]byte(fmt.Sprintf("%s", params)))
+		}
+		if(params[0]=="gethostname"||params[0]=="hostname") {
+			mrouter.BroadcastOthers([]byte(fmt.Sprintf("%s", params)), s)
+		}
+
 		if(params[0]=="locationupdate"||params[0]=="getenemy") {
 			mrouter.BroadcastOthers([]byte(fmt.Sprintf("%s", params)), s)
 		}
