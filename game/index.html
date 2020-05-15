@@ -64,42 +64,52 @@
     </form>
         </center>
         {{else if eq .page 1}}
+    <center>
+    <h1 class="ui header">Waiting Room</h1>
 {{ if eq .ishost "1"}}
 
     <div class="ui list">
         <div class="item">
-            <img class="ui avatar image" src="http://localhost:8080/images/A/A0.png">
+            <img class="ui tiny image" src="http://localhost:8080/images/A/A0.png">
             <div class="content">
-                <div class="description" >{{.name}}</div>
+                <div class="description" >{{.name}} (you)</div>
             </div>
         </div>
     </div>
+    <h4 class="ui horizontal  divider">
+        VS
+    </h4>
+
     {{ else if eq .ishost "0"}}
     <div class="ui list">
         <div class="item">
-            <img class="ui avatar image" src="http://localhost:8080/images/A/A0.png">
+            <img class="ui tiny image" src="http://localhost:8080/images/A/A0.png">
             <div class="content">
                 <div class="description" id="hostuser" ></div>
             </div>
         </div>
     </div>
+    <h4 class="ui horizontal  divider">
+        VS
+    </h4>
     <div class="ui list">
         <div class="item">
-            <img class="ui avatar image" src="http://localhost:8080/images/B/B0.png">
+            <img class="ui tiny image" src="http://localhost:8080/images/B/B0.png">
             <div class="content">
-                <div class="description">{{.name}}</div>
+                <div class="description">{{.name}} (you)</div>
             </div>
         </div>
     </div>
+    </center>
         {{end}}
-
-    <div id="user"></div>
+    <div id="user">
+        <div class="ui active centered inline loader"  id ="loader"><br><br>Loading</div>
+    </div>
         {{else if eq .page 2}}
 <div id="pixiview"></div>
 {{end}}
 <script>
     {{ if eq .page 1}}
-
     {{ if eq .ishost "1"}}
     var url = "ws://" + "localhost:8080/ws/" + {{.roomid}};
     ws = new WebSocket(url);
@@ -111,8 +121,9 @@
             if(user) {
 
                 if (parts[0] == "newuser") {
-                    document.getElementById('user').innerHTML = "<div class=\"ui list\">\n<div class=\"item\"><img class=\"ui avatar image\" src=\"http://localhost:8080/images/B/B1.png\"><div class=\"content\"><div class=\"description\">" + parts[1].slice(0, -1) + "</div></div></div></div>"
+                    document.getElementById('user').innerHTML = "<div class=\"ui list\">\n<div class=\"item\"><img class=\"ui tiny image\" src=\"http://localhost:8080/images/B/B0.png\"><div class=\"content\"><div class=\"description\">" + parts[1].slice(0, -1) + "</div></div></div></div>"
                     user = false
+                    document.getElementById("btnloc").innerHTML="<br><br><button class=\"ui inverted  huge red button\" id=\"sbtn\" type=\"hidden\">\n    Start Game\n</button>\n"
                 }
             }
             if(parts[0]=="roomislive"){
@@ -137,10 +148,12 @@
             var parts = msg.data.slice(1,).split(" ")
             if(parts[0]=="hostname") {
                 document.getElementById('hostuser').innerHTML = parts[1].slice(0,-1)
+                document.getElementById("user").innerHTML=""
             }
         }
     }
     {{end}}
+
     {{end}}
 
     {{ if eq .page 2}}
@@ -858,5 +871,11 @@ var playing =true
                     });
 {{end}}
 </script>
+{{if eq .page 1 }}
+{{if eq .ishost "1" }}
+    <div id="btnloc"></div>
+{{end}}
+{{end}}
+
 </body>
 </html>
