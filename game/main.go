@@ -52,6 +52,8 @@ func main() {
 
 	router := gin.Default()
 	router.Static("/images", "./images/")
+	router.Static("/play/images", "./play/images/")
+
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
 	router.Use(cors.New(config))
@@ -117,6 +119,16 @@ func main() {
 		id:= ctx.Param("id")
 		ctx.HTML(200, "index.html", gin.H{"page": 1, "error": -1,"name":username,"ishost":ishost,"roomid":id})
 	})
+	router.POST("/play/:id", func(ctx *gin.Context) {
+		team := ctx.PostForm("player")
+		name := ctx.PostForm("name")
+		enemyteam := ctx.PostForm("enemyteam")
+		enemyname := ctx.PostForm("enemyname")
+		ishost := ctx.PostForm("ishost")
+		id:= "you"
+		enemyid:="enemy"
+		ctx.HTML(200, "index.html", gin.H{"page": 2, "ishost":ishost,"team":team,"name":name,"id":id,"enemyteam":enemyteam,"enemyname":enemyname,"enemyid":enemyid})
+	})
 
 	router.GET("/ws/:id", func(ctx *gin.Context) {
 		mrouter.HandleRequest(ctx.Writer, ctx.Request)
@@ -124,6 +136,9 @@ func main() {
 
 	mrouter.HandleMessage(func(s *melody.Session, msg []byte) {
 		params := strings.Split(string(msg), " ")
+		if(params[0]=="begin") {
+			mrouter.Broadcast([]byte(fmt.Sprintf("%s", params)))
+		}
 		if(params[0]=="newuser") {
 			mrouter.Broadcast([]byte(fmt.Sprintf("%s", params)))
 		}

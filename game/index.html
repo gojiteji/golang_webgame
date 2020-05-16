@@ -31,10 +31,27 @@
             }
         }
     {{end}}
-</script>
-<body>
-<br><br><br><br><br><br><br><br>
+    {{if eq .page 1}}
+    {{if eq .ishost "1"}}
+    function gamebegin(){
+        var url = "ws://" + "localhost:8080/ws/" + {{.id}};
+        ws = new WebSocket(url);
+        ws.onopen = function (event) {
+            ws.send(["begin"].join(" "));
+        }
+    }
+    {{end}}
+    {{end}}
 
+</script>
+<center>
+{{if eq .page 0}}
+    <br><br><br><br><br><br><br><br>
+{{end}}
+
+    {{if eq .page 1}}
+<br><br><br><br><br><br><br><br>
+{{end}}
 {{if eq .page 0}}
     <center>
             <h1>ひとあつめ</h1>
@@ -107,23 +124,27 @@
     </div>
         {{else if eq .page 2}}
 <div id="pixiview"></div>
+    <center>
+    <p style="padding:0.3em;">表示がおかしいときはリロードしてね　<button  class="ui primary basic blue button"　onclick="location.href='game.gojiteji.com'>タイトルへ戻る</button></p>
+    </center>
 {{end}}
+
 <script>
     {{ if eq .page 1}}
     {{ if eq .ishost "1"}}
     var url = "ws://" + "localhost:8080/ws/" + {{.roomid}};
     ws = new WebSocket(url);
     user=true
+    var enemyname=""
     ws.onmessage = function (msg) {
         if (msg.data) {
             var parts = msg.data.slice(1,).split(" ")
-
             if(user) {
-
                 if (parts[0] == "newuser") {
+                    enemyname= parts[1].slice(0, -1)
                     document.getElementById('user').innerHTML = "<div class=\"ui list\">\n<div class=\"item\"><img class=\"ui tiny image\" src=\"http://localhost:8080/images/B/B0.png\"><div class=\"content\"><div class=\"description\">" + parts[1].slice(0, -1) + "</div></div></div></div>"
                     user = false
-                    document.getElementById("btnloc").innerHTML="<br><br><button class=\"ui inverted  huge red button\" id=\"sbtn\" type=\"hidden\">\n    Start Game\n</button>\n"
+                    document.getElementById("btnloc").innerHTML="<br><br><button class=\"ui inverted  huge red button\" id=\"sbtn\" type=\"hidden\" onclick=\"gamebegin()\">\n Start Game\n</button>\n"
                 }
             }
             if(parts[0]=="roomislive"){
@@ -132,6 +153,18 @@
             if(parts[0].slice(0,-1)=="gethostname"){
                 ws.send(["hostname",{{.name}}].join(" "))
             }
+            if(parts[0].slice(0,-1)=="begin"){
+                var url = 'http://localhost:8080/play/' + {{.roomid}};
+                var form = $('<form action="' + url + '" method="post">' +
+                    '<input type="hidden" name="player" value="A" />' +
+                    '<input type="hidden" name="name" value={{.name}} />' +
+                    '<input type="hidden" name="ishost" value="1" />' +
+                    '<input type="hidden" name="enemyname" value='+enemyname+' />' +
+                    '<input type="hidden" name="enemyteam" value="B" />' +
+                    '</form>');
+                $('body').append(form);
+                form.submit();            }
+
 
         }
     }
@@ -139,7 +172,7 @@
     {{else if eq .ishost "0"}}
     var url = "ws://" + "localhost:8080/ws/" + {{.roomid}};
     ws = new WebSocket(url);
-
+    var enemyname=""
     ws.onopen = function (event) {
         ws.send(["gethostname"].join(" "))
     }
@@ -149,7 +182,21 @@
             if(parts[0]=="hostname") {
                 document.getElementById('hostuser').innerHTML = parts[1].slice(0,-1)
                 document.getElementById("user").innerHTML=""
+                enemyname=parts[1].slice(0,-1)
             }
+            if(parts[0].slice(0,-1)=="begin"){
+                var url = 'http://localhost:8080/play/' + {{.roomid}};
+                var form = $('<form action="' + url + '" method="post">' +
+                    '<input type="hidden" name="player" value="B" />' +
+                    '<input type="hidden" name="name" value={{.name}} />' +
+                    '<input type="hidden" name="ishost" value="0" />' +
+                    '<input type="hidden" name="enemyname" value='+enemyname+' />' +
+                    '<input type="hidden" name="enemyteam" value="A" />' +
+                    '</form>');
+                $('body').append(form);
+                form.submit();
+            }
+
         }
     }
     {{end}}
@@ -158,7 +205,7 @@
 
     {{ if eq .page 2}}
 
-    var url = "ws://" + "localhost:8080" + "/ws/a";
+    var url = "ws://" + "localhost:8080" + "/ws/"+{{.roomid}};
     ws = new WebSocket(url);
 
 
@@ -169,8 +216,9 @@
 
     function updatecats(arr) {
         for (i = 0; i < player_num; i++) {
-            if (players[i].id == arr[0]) {
+            if ("enemy" == arr[0]) {
                 animate = false
+
                 if (Math.abs(players[i].lastswitchedx - parseFloat(arr[2])) > 3 || Math.abs(players[i].lastswitchedy - parseFloat(arr[3])) > 1.5) {
                     players[i].switchingfoot()
                     if (Math.abs(players[i].lastswitchedx - parseFloat(arr[2])) > Math.abs(players[i].lastswitchedy - parseFloat(arr[3]))) {
@@ -216,7 +264,7 @@
         }
 function updateenemy(arr){
     for(i=0;i<player_num;i++){
-        if(players[i].id==arr[1][0][0]){
+        if(players[i].id=="enemy"){
             players[i].holdings = parseInt(players[i].holdings) + 1
             for(j=0;j<personlist.length;j++) {
                 if(personlist[j].id==arr[0]) {
@@ -264,7 +312,7 @@ function updateenemy(arr){
         width: 400, height: 300, backgroundColor: 0x2f4f4f, resolution: window.devicePixelRatio || 1,
     });
     document.body.appendChild(app.view);
-
+    PIXI.settings.CREATE_IMAGE_BITMAP = false;
     var home1 = new PIXI.Graphics();
     home1.beginFill(0xdeb887);
     home1.lineStyle(5, 0xd2b48c);
@@ -466,8 +514,9 @@ var playing =true
             }
                 if (this.isIn) {
                     //自陣での並び方
-                    this.person.x = 10 + this.scoreline * 3
-                    this.person.y = 150
+                    app.stage.removeChild(this.person);
+                    //this.person.x = 10 + this.scoreline * 3
+                    //this.person.y = 150
                 } else {
                     if (this.attracted) {
                         //魅了されたらスタンプの絵に並ぶ
@@ -541,10 +590,10 @@ var playing =true
                             this.y = y;
                             this.id = id
                             this.team = team
-                            this.texture00 = PIXI.Texture.from('./images/' + team + '/' + team + '_0.png');
-                            this.texture01 = PIXI.Texture.from('./images/' + team + '/' + team + '_1.png');
-                            this.texture10 = PIXI.Texture.from('./images/' + team + '/' + team + '0.png');
-                            this.texture11 = PIXI.Texture.from('./images/' + team + '/' + team + '1.png');
+                            this.texture00 = PIXI.Texture.from('./images/' + this.team + '/' + this.team + '_0.png');
+                            this.texture01 = PIXI.Texture.from('./images/' + this.team + '/' + this.team + '_1.png');
+                            this.texture10 = PIXI.Texture.from('./images/' + this.team + '/' + this.team + '0.png');
+                            this.texture11 = PIXI.Texture.from('./images/' + this.team + '/' + this.team + '1.png');
 
                             this.sprite = new PIXI.Sprite(this.texture00);
                             this.sprite.width = this.sprite.width / 30;
@@ -747,7 +796,7 @@ var playing =true
                                 this.sprite.texture = this.texture00
                             }
                             if (!(this.sx == 0 && this.sy == 0)) {
-                                ws.send(["locationupdate", this.id, this.name, this.sprite.x, this.sprite.y, this.holdings, this.team].join(" "));
+                                ws.send(["locationupdate", "enemy", this.name, this.sprite.x, this.sprite.y, this.holdings, this.team].join(" "));
                             }
                             this.sprite.x += this.sx * this.speedcoeff * delta;
                             this.sprite.y += this.sy * this.speedcoeff * delta;
@@ -760,16 +809,16 @@ var playing =true
                                         case true:
                                             if (this.sx > 0) {
 
-                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_r.png'));
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/'+this.team+'/'+this.team+'_stamp_r.png'));
                                             } else {
-                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_l.png'));
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/'+this.team+'/'+this.team+'_stamp_l.png'));
                                             }
                                             break;
                                         case false:
                                             if (this.sy > 0) {
-                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_d.png'));
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/'+this.team+'/'+this.team+'_stamp_d.png'));
                                             } else {
-                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/A/A_stamp_u.png'));
+                                                this.a_stmap_sprite = new PIXI.Sprite(PIXI.Texture.from('./images/'+this.team+'/'+this.team+'_stamp_u.png'));
                                             }
                                             break;
                                     }
@@ -812,38 +861,48 @@ var playing =true
                             }
                         }
                     }
+                    var a_name = {{.name}};
+                    var a_id = {{.id}}
+                    var ta = {{.team}};
 
-                    var a_name = window.prompt("a name", "");
-                    var a_id = window.prompt("a id", "");
-                    var ta = window.prompt("a  team", "");
-
-                    var b_name = window.prompt("b name", "");
-                    var b_id = window.prompt("b id", "")
-                    var t = window.prompt("b  team", "");
-                    var ishost = window.prompt("host", "");
-
+                    var b_name = {{.enemyname}};
+                    var b_id = {{.enemyid}}
+                    var tb = {{.enemyteam}};
+                    var ishost = {{.ishost}};
                     // Listen for animate update
-                    let kittle = new cat(80, 150, ta, a_name, a_id)
+                    let kittle
+
+
                     var score_a = 0
                     var score_b = 0
                     var stamploc = []
                     var wsonopen = false
                     ws.onopen = function (event) {
                         wsonopen = true;
-
                     }
 
-                    for (var i = 0; i < player_num; i++) {
-                        players.push(new player(80, 150, t, b_name, b_id))
-                    }
+
                     t=60
                     var sumdelta = 0
-                    while(true){
-
-                    }
+                    runonce=true
                     app.ticker.add((delta) => {
+                        if(runonce){
+                            if(ta=="A") {
+                                kittle = new cat(60, 150, ta,  a_id,a_name)
+                            }else if(ta=="B"){
+                                kittle = new cat(340, 150, ta,  a_id,a_name)
+                            }
+                            for (var i = 0; i < player_num; i++) {
+                                if(ta=="A") {
+                                    players.push(new player(340, 150, tb, b_id, b_name))
+                                }else if(ta=="B"){
+                                    players.push(new player(60, 150, tb, b_id, b_name))
+                                }
+                            }
+                            runonce=false
+                        }
                         if (wsonopen) {
-                            if (ishost == "yes" && sumdelta > 60) {
+                            if (ishost == "1" && sumdelta > 60&&t>0) {
                                 ws.send(["host"].join(" "))
                                 sumdelta = 0
                                 t=t-1
