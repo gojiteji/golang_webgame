@@ -1,2 +1,2 @@
 # ヒトあつめ
-もう直ぐ完成
+[http://game.gojiteji.com](http://game.gojiteji.com)
