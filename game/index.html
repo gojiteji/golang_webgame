@@ -46,7 +46,7 @@
     {{end}}
 
 </script>
-<body>
+<body id="display">
 <center>
 {{if eq .page 0}}
     <br><br><br><br><br><br><br><br>
@@ -128,7 +128,7 @@
         {{else if eq .page 2}}
 <div id="pixiview"></div>
     <center>
-    <p style="padding:0.3em;">表示がおかしいときはリロードしてね　<button  class="ui primary basic blue button"　onclick="location.href='catgame.gojiteji.com'">タイトルへ戻る</button></p>
+        <p style="padding:0.3em;">表示がおかしいときはリロードしてね&nbsp&nbsp<button   class="ui primary basic blue button"　 type="button"  onclick="location.href='http://game.gojiteji.com'">タイトルへ戻る</button></p>
     </center>
 {{end}}
 
@@ -538,7 +538,32 @@ var playing =true
             }
         }
     }
-                    function stampchecker(k, p) {
+
+    //for mobile
+    var mobilex=60
+    var mobiley=150
+
+
+    var display = document.getElementsByTagName('canvas')[0];
+    var updateXY = function(event) {
+        mobilex=event.changedTouches[0].pageX/display.width*300+60;
+        mobiley= event.changedTouches[0].pageY/display.height*300-20;
+    };
+    display.addEventListener('touchstart', function(event) {
+        updateXY(event);
+    }, false);
+
+    display.addEventListener('touchmove', function(event) {
+        event.preventDefault();
+        updateXY(event);
+    }, false);
+
+    display.addEventListener('touchend', function(event) {
+        updateXY(event);
+    }, false);
+
+
+    function stampchecker(k, p) {
                         if (k.holdings < 5) {
                             for (var i = 0; i < p.length; i++) {
                                 if (p[i].attracted == false) {
@@ -712,6 +737,8 @@ var playing =true
 
                     class cat {
                         constructor(x, y, team, id, name) {
+                            mobilex=x
+                            mobiley=y
                             this.score = 0
                             this.name = name
                             this.isu=true
@@ -762,11 +789,19 @@ var playing =true
                         update(delta) {
                             this.px = this.sx
                             this.py = this.sy
-                            this.dx = Math.abs(app.renderer.plugins.interaction.mouse.global.x - this.sprite.x)
-                            this.dy = Math.abs(app.renderer.plugins.interaction.mouse.global.y - this.sprite.y)
+                            if(navigator.userAgent.match(/iPhone|Android.+Mobile/)) {
+                                    this.dx = Math.abs(mobilex - this.sprite.x)
+                                    this.dy = Math.abs(mobiley - this.sprite.y)
 
-                            this.sx = speed(app.renderer.plugins.interaction.mouse.global.x, this.sprite.x)
-                            this.sy = speed(app.renderer.plugins.interaction.mouse.global.y, this.sprite.y)
+                                    this.sx = speed(mobilex, this.sprite.x)
+                                    this.sy = speed(mobilexy, this.sprite.y)
+                            }else{
+                                this.dx = Math.abs(app.renderer.plugins.interaction.mouse.global.x - this.sprite.x)
+                                this.dy = Math.abs(app.renderer.plugins.interaction.mouse.global.y - this.sprite.y)
+
+                                this.sx = speed(app.renderer.plugins.interaction.mouse.global.x, this.sprite.x)
+                                this.sy = speed(app.renderer.plugins.interaction.mouse.global.y, this.sprite.y)
+                            }
                             if (this.sy == 0 && this.sx == 0 && this.sprite.texture == this.texture11) {
                                 this.sprite.texture = this.texture10
                             }
